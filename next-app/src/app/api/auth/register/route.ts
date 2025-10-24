@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase"; // ubah import
 import { registerSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
-  if (!supabaseAdmin) {
+  if (!supabase) {
     return NextResponse.json(
       { message: "Supabase belum dikonfigurasi di server." },
       { status: 500 },
@@ -24,7 +24,8 @@ export async function POST(request: Request) {
 
     const { name, username, email, noTelepon, password } = parsed.data;
 
-    const { data: existing, error: existingError } = await supabaseAdmin
+    // Cek apakah user sudah ada
+    const { data: existing, error: existingError } = await supabase
       .from("users")
       .select("id")
       .or(`email.eq.${email},username.eq.${username}`)
@@ -41,9 +42,11 @@ export async function POST(request: Request) {
       );
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const { data: user, error: insertError } = await supabaseAdmin
+    // Insert user baru
+    const { data: user, error: insertError } = await supabase
       .from("users")
       .insert({
         name,
@@ -51,7 +54,7 @@ export async function POST(request: Request) {
         email,
         no_telepon: noTelepon ?? null,
         password: hashedPassword,
-        role: "USER",
+        role: "user",
       })
       .select("id, name, email, username, role")
       .single();
@@ -63,6 +66,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ user }, { status: 201 });
   } catch (error) {
     console.error("Register error", error);
-    return NextResponse.json({ message: "Terjadi kesalahan pada server." }, { status: 500 });
+    return NextResponse.json(
+      { message: "Terjadi kesalahan pada server." },
+      { status: 500 },
+    );
   }
 }
