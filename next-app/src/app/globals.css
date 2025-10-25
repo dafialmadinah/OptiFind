@@ -4,7 +4,19 @@
 
 :root {
   color-scheme: light;
-  scroll-behavior: smooth;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
 }
 
 body {
@@ -26,6 +38,14 @@ a {
 
 .floating {
   animation: float 6s ease-in-out infinite;
+}
+
+.floating-slow {
+  animation: float 7s ease-in-out infinite;
+}
+
+.floating-slower {
+  animation: float 9s ease-in-out infinite;
 }
 
 .fade-up {

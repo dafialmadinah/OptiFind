@@ -13,7 +13,6 @@ export const metadata: Metadata = {
   title: "OptiFind",
   description: "Platform pelaporan barang hilang dan temuan.",
 };
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" className="!scroll-smooth">
