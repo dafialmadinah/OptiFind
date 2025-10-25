@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 
 const navLinks = [
-  { label: "Beranda", href: "/barangs" },
+  { label: "Beranda", href: "/dashboard" },
   { label: "Lapor Hilang", href: "/barangs/lapor-hilang" },
   { label: "Lapor Temuan", href: "/barangs/lapor-temuan" },
   { label: "Riwayat", href: "/riwayat-laporan" },
@@ -34,8 +34,8 @@ export function Navbar({ user }: NavbarProps) {
   }, []);
 
   const isActive = (href: string) => {
-    if (href === "/barangs") {
-      return pathname === "/" || pathname.startsWith("/barangs");
+    if (href === "/dashboard") {
+      return pathname === "/dashboard";
     }
     return pathname.startsWith(href);
   };
@@ -47,7 +47,7 @@ export function Navbar({ user }: NavbarProps) {
           scrolled ? "shadow-2xl" : "shadow-lg"
         }`}
       >
-        <Link href="/barangs" className="flex items-center gap-3">
+        <Link href="/dashboard" className="flex items-center gap-3">
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/20 backdrop-blur-sm">
             <Image src="/assets/logo_kecil.svg" alt="OptiFind" width={28} height={28} className="h-7 w-7" />
           </div>
@@ -74,7 +74,7 @@ export function Navbar({ user }: NavbarProps) {
               <span className="text-sm text-white/80">{user.name ?? user.email}</span>
               <button
                 type="button"
-                onClick={() => signOut({ callbackUrl: "/barangs" })}
+                onClick={() => signOut({ callbackUrl: "/" })}
                 className="rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white hover:text-[#6f6b70]"
               >
                 Keluar
@@ -135,7 +135,7 @@ export function Navbar({ user }: NavbarProps) {
               type="button"
               onClick={() => {
                 setMenuOpen(false);
-                void signOut({ callbackUrl: "/barangs" });
+                void signOut({ callbackUrl: "/" });
               }}
               className="mt-2 w-full rounded-full bg-white/10 px-4 py-2 text-sm font-semibold uppercase tracking-wide transition hover:bg-white hover:text-[#6f6b70]"
             >
