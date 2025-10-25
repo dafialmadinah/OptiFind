@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import { GsapProvider } from "@/components/gsap-provider";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -13,16 +14,13 @@ export const metadata: Metadata = {
   description: "Platform pelaporan barang hilang dan temuan.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id">
-      <body className={`${poppins.variable} font-sans antialiased bg-[#f0f9ff] text-slate-900`}>
-        {children}
+    <html lang="id" className="!scroll-smooth">
+      <body className={`${poppins.variable} font-sans antialiased bg-[#f0f9ff] text-slate-900 overflow-x-hidden`}>
+        <GsapProvider>{children}</GsapProvider>
       </body>
     </html>
   );
 }
+
