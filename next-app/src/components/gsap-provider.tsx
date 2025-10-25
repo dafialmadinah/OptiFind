@@ -1,9 +1,9 @@
 "use client";
 
 import { ReactNode, useLayoutEffect } from "react";
+import Lenis from "@studio-freight/lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ScrollSmoother } from "gsap/ScrollSmoother";
 
 type Props = {
   children: ReactNode;
@@ -11,14 +11,23 @@ type Props = {
 
 export function GsapProvider({ children }: Props) {
   useLayoutEffect(() => {
-    gsap.registerPlugin(ScrollTrigger, ScrollSmoother);
-    
-    // Create the smooth scroller
-    ScrollSmoother.create({
-      smooth: 2,
-      effects: true,
-      smoothTouch: 0.1,
+    gsap.registerPlugin(ScrollTrigger);
+
+    const lenis = new Lenis({
+      duration: 1.2,
+      smoothWheel: true,
+      smoothTouch: false,
+      touchMultiplier: 1.2,
     });
+
+    const update = (time: number) => {
+      lenis.raf(time * 1000);
+    };
+
+    gsap.ticker.add(update);
+    gsap.ticker.lagSmoothing(0);
+
+    lenis.on("scroll", ScrollTrigger.update);
 
     const ctx = gsap.context(() => {
       gsap.utils.toArray<HTMLElement>(".fade-up").forEach((el) => {
@@ -42,13 +51,11 @@ export function GsapProvider({ children }: Props) {
 
     return () => {
       ctx.revert();
+      lenis.destroy();
+      gsap.ticker.remove(update);
+      gsap.ticker.lagSmoothing(0.8, 33);
     };
   }, []);
 
-  return (
-    <div id="smooth-wrapper">
-      <div id="smooth-content">{children}</div>
-    </div>
-  );
+  return <>{children}</>;
 }
-
