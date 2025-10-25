@@ -1,0 +1,42 @@
+meta {
+  name: Update Status
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{apiUrl}}/barangs/1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("should return 200 on successful update", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return success message", function() {
+    const data = res.getBody();
+    expect(data).to.have.property('message');
+  });
+}
+
+docs {
+  # Update Barang Status
+  
+  **Authentication Required**
+  
+  Endpoint ini mengubah status barang dari:
+  - "Belum Ditemukan" → "Sudah Ditemukan"
+  - "Belum Dikembalikan" → "Sudah Dikembalikan"
+  
+  Replace '1' di URL dengan ID barang yang sebenarnya.
+  
+  Authorization:
+  - Hanya pelapor atau admin yang bisa update
+  - Gunakan Bearer token dari response login
+}

@@ -1,143 +1,83 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-options";
-import { supabaseAdmin } from "@/lib/supabase";
-import { barangSchema } from "@/lib/validation";
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 import { getBarangById } from "@/lib/barang-service";
+import { getAuthUser } from "@/lib/auth-utils";
 
 type Params = {
   params: { id: string };
 };
 
-export async function GET(_: Request, { params }: Params) {
+export async function PUT(request: NextRequest, { params }: Params) {
   const barangId = Number(params.id);
   if (Number.isNaN(barangId)) {
     return NextResponse.json({ message: "ID tidak valid." }, { status: 400 });
   }
 
-  const barang = await getBarangById(barangId);
+  const user = getAuthUser(request);
+  if (!user) {
+    return NextResponse.json({ message: "Unauthorised" }, { status: 401 });
+  }
 
+  // Pastikan Supabase sudah dikonfigurasi
+  if (!supabase) {
+    return NextResponse.json(
+      { message: "Supabase belum dikonfigurasi di server." },
+      { status: 500 }
+    );
+  }
+
+  const barang = await getBarangById(barangId);
   if (!barang) {
     return NextResponse.json({ message: "Barang tidak ditemukan." }, { status: 404 });
   }
 
-  return NextResponse.json({ data: barang });
-}
+  const userId = user.id;
+  const isAdmin = user.role === "ADMIN";
 
-export async function PUT(request: Request, { params }: Params) {
-  const barangId = Number(params.id);
-  if (Number.isNaN(barangId)) {
-    return NextResponse.json({ message: "ID tidak valid." }, { status: 400 });
-  }
-
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ message: "Unauthorised" }, { status: 401 });
-  }
-
-  if (!supabaseAdmin) {
-    return NextResponse.json({ message: "Supabase belum dikonfigurasi." }, { status: 500 });
-  }
-
-  const existing = await getBarangById(barangId);
-
-  if (!existing) {
-    return NextResponse.json({ message: "Barang tidak ditemukan." }, { status: 404 });
-  }
-
-  const userId = Number(session.user.id);
-  const isAdmin = session.user.role === "ADMIN";
-
-  if (!isAdmin && existing.pelaporId !== userId) {
+  if (!isAdmin && barang.pelaporId !== userId) {
     return NextResponse.json({ message: "Anda tidak memiliki akses." }, { status: 403 });
   }
 
-  try {
-    const json = await request.json();
-    const payload = {
-      ...json,
-      tipeId: Number(json.tipeId),
-      kategoriId: Number(json.kategoriId),
-      statusId: Number(json.statusId),
-    };
-    const parsed = barangSchema.safeParse(payload);
+  const statusNama = barang.status.nama.toLowerCase();
+  let statusTarget: string | null = null;
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { message: "Validasi gagal", errors: parsed.error.flatten() },
-        { status: 422 },
-      );
-    }
-
-    const data = parsed.data;
-
-    const { error: updateError } = await supabaseAdmin
-      .from("barangs")
-      .update({
-        nama: data.nama,
-        tipe_id: data.tipeId,
-        kategori_id: data.kategoriId,
-        waktu: data.waktu ? new Date(data.waktu).toISOString() : null,
-        lokasi: data.lokasi ?? null,
-        kontak: data.kontak ?? null,
-        deskripsi: data.deskripsi ?? null,
-        foto: data.foto ? data.foto : null,
-        status_id: data.statusId,
-      })
-      .eq("id", barangId);
-
-    if (updateError) {
-      throw updateError;
-    }
-
-    const barang = await getBarangById(barangId);
-
-    return NextResponse.json({ data: barang });
-  } catch (error) {
-    console.error("Failed to update barang", error);
-    return NextResponse.json({ message: "Terjadi kesalahan pada server." }, { status: 500 });
-  }
-}
-
-export async function DELETE(_: Request, { params }: Params) {
-  const barangId = Number(params.id);
-  if (Number.isNaN(barangId)) {
-    return NextResponse.json({ message: "ID tidak valid." }, { status: 400 });
+  if (statusNama.includes("belum ditemukan")) {
+    statusTarget = "Sudah Ditemukan";
+  } else if (statusNama.includes("belum dikembalikan")) {
+    statusTarget = "Sudah Dikembalikan";
+  } else {
+    return NextResponse.json(
+      { message: "Laporan sudah dalam status selesai." },
+      { status: 400 }
+    );
   }
 
-  const session = await getServerSession(authOptions);
+  // cari id status baru
+  const { data: statusBaru, error: statusError } = await supabase
+    .from("statuses")
+    .select("id")
+    .eq("nama", statusTarget)
+    .maybeSingle<{ id: number }>();
 
-  if (!session?.user?.id) {
-    return NextResponse.json({ message: "Unauthorised" }, { status: 401 });
+  if (statusError) {
+    console.error("Status lookup error", statusError);
+    return NextResponse.json({ message: "Gagal mencari status baru." }, { status: 500 });
   }
 
-  if (!supabaseAdmin) {
-    return NextResponse.json({ message: "Supabase belum dikonfigurasi." }, { status: 500 });
+  if (!statusBaru) {
+    return NextResponse.json({ message: "Status tujuan tidak ditemukan." }, { status: 500 });
   }
 
-  const existing = await getBarangById(barangId);
+  // update status barang
+  const { error: updateError } = await supabase
+    .from("barangs")
+    .update({ status_id: statusBaru.id })
+    .eq("id", barangId);
 
-  if (!existing) {
-    return NextResponse.json({ message: "Barang tidak ditemukan." }, { status: 404 });
+  if (updateError) {
+    console.error("Status update error", updateError);
+    return NextResponse.json({ message: "Gagal memperbarui status." }, { status: 500 });
   }
 
-  const userId = Number(session.user.id);
-  const isAdmin = session.user.role === "ADMIN";
-
-  if (!isAdmin && existing.pelaporId !== userId) {
-    return NextResponse.json({ message: "Anda tidak memiliki akses." }, { status: 403 });
-  }
-
-  try {
-    const { error: deleteError } = await supabaseAdmin.from("barangs").delete().eq("id", barangId);
-    if (deleteError) {
-      throw deleteError;
-    }
-
-    return NextResponse.json({ message: "Barang berhasil dihapus." });
-  } catch (error) {
-    console.error("Failed to delete barang", error);
-    return NextResponse.json({ message: "Terjadi kesalahan pada server." }, { status: 500 });
-  }
+  return NextResponse.json({ message: "Status laporan berhasil diperbarui." });
 }

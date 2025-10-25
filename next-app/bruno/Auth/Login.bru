@@ -1,0 +1,49 @@
+meta {
+  name: Login
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{apiUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "john@example.com",
+    "password": "password123"
+  }
+}
+
+tests {
+  test("should return 200 on successful login", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return user data and token", function() {
+    const data = res.getBody();
+    expect(data).to.have.property('user');
+    expect(data).to.have.property('token');
+    expect(data.user).to.have.property('id');
+    expect(data.user).to.have.property('email');
+  });
+  
+  test("should save token to environment", function() {
+    const data = res.getBody();
+    if (data.token) {
+      bru.setEnvVar('authToken', data.token);
+    }
+  });
+}
+
+docs {
+  # Login API
+  
+  Login dengan email dan password.
+  Response akan mengembalikan user data dan JWT token.
+  
+  Token akan otomatis disimpan ke environment variable 'authToken'
+  yang bisa digunakan untuk request selanjutnya.
+}

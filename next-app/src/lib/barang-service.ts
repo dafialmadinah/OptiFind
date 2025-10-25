@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "./supabase";
+import { supabase } from "./supabase";
 
 export type Reference = {
   id: number;
@@ -48,16 +48,17 @@ type SupabaseBarangRow = {
   foto: string | null;
   created_at: string | null;
   updated_at: string | null;
-  tipe: Reference | null;
-  kategori: Reference | null;
-  status: Reference | null;
+  // Supabase returns related rows as arrays even for single FK relationships
+  tipe: Reference[] | null;
+  kategori: Reference[] | null;
+  status: Reference[] | null;
   pelapor:
     | {
         id: number;
         name: string | null;
         username: string | null;
         no_telepon: string | null;
-      }
+      }[]
     | null;
 };
 
@@ -87,8 +88,12 @@ const emptyOverview = {
   barangTemuan: [] as BarangWithRelations[],
   barangHilang: [] as BarangWithRelations[],
 };
-
 function mapBarang(row: SupabaseBarangRow): BarangWithRelations {
+  const tipeRel = row.tipe?.[0] ?? null;
+  const kategoriRel = row.kategori?.[0] ?? null;
+  const statusRel = row.status?.[0] ?? null;
+  const pelaporRel = row.pelapor?.[0] ?? null;
+
   return {
     id: row.id,
     nama: row.nama,
@@ -103,15 +108,15 @@ function mapBarang(row: SupabaseBarangRow): BarangWithRelations {
     foto: row.foto,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    tipe: row.tipe ?? { id: row.tipe_id, nama: "-" },
-    kategori: row.kategori ?? { id: row.kategori_id, nama: "-" },
-    status: row.status ?? { id: row.status_id, nama: "-" },
-    pelapor: row.pelapor
+    tipe: tipeRel ?? { id: row.tipe_id, nama: "-" },
+    kategori: kategoriRel ?? { id: row.kategori_id, nama: "-" },
+    status: statusRel ?? { id: row.status_id, nama: "-" },
+    pelapor: pelaporRel
       ? {
-          id: row.pelapor.id,
-          name: row.pelapor.name,
-          username: row.pelapor.username,
-          noTelepon: row.pelapor.no_telepon,
+          id: pelaporRel.id,
+          name: pelaporRel.name,
+          username: pelaporRel.username,
+          noTelepon: pelaporRel.no_telepon,
         }
       : null,
   };
@@ -130,17 +135,18 @@ function sortByWaktuDesc(items: BarangWithRelations[]) {
   });
 }
 
+// 🔹 Overview barang dan kategori
 export async function getBarangOverview() {
-  if (!supabaseAdmin) {
-    return emptyOverview;
-  }
+  if (!supabase) return emptyOverview;
 
   try {
-    const [{ data: barangData, error: barangError }, { data: kategoriData, error: kategoriError }] =
-      await Promise.all([
-        supabaseAdmin.from("barangs").select(barangSelect).order("created_at", { ascending: false }),
-        supabaseAdmin.from("kategoris").select("id, nama").order("nama", { ascending: true }),
-      ]);
+    const [
+      { data: barangData, error: barangError },
+      { data: kategoriData, error: kategoriError },
+    ] = await Promise.all([
+      supabase.from("barangs").select(barangSelect).order("created_at", { ascending: false }),
+      supabase.from("kategoris").select("id, nama").order("nama", { ascending: true }),
+    ]);
 
     if (barangError) throw barangError;
     if (kategoriError) throw kategoriError;
@@ -150,14 +156,14 @@ export async function getBarangOverview() {
 
     const barangTemuan = sortByWaktuDesc(
       barangs.filter(
-        (barang) => barang.tipe.nama === "Temuan" && barang.status.nama === "Belum Dikembalikan",
-      ),
+        (barang) => barang.tipe.nama === "Temuan" && barang.status.nama === "Belum Dikembalikan"
+      )
     ).slice(0, 6);
 
     const barangHilang = sortByWaktuDesc(
       barangs.filter(
-        (barang) => barang.tipe.nama === "Hilang" && barang.status.nama === "Belum Ditemukan",
-      ),
+        (barang) => barang.tipe.nama === "Hilang" && barang.status.nama === "Belum Ditemukan"
+      )
     ).slice(0, 6);
 
     return { barangs, kategoris, barangTemuan, barangHilang };
@@ -167,11 +173,12 @@ export async function getBarangOverview() {
   }
 }
 
+// 🔹 Get barang by ID
 export async function getBarangById(id: number): Promise<BarangWithRelations | null> {
-  if (!supabaseAdmin) return null;
+  if (!supabase) return null;
 
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("barangs")
       .select(barangSelect)
       .eq("id", id)
@@ -187,6 +194,7 @@ export async function getBarangById(id: number): Promise<BarangWithRelations | n
   }
 }
 
+// 🔹 Search barangs
 export type SearchParams = {
   q?: string;
   tipe?: string;
@@ -194,12 +202,15 @@ export type SearchParams = {
 };
 
 export async function searchBarangs(params: SearchParams): Promise<BarangWithRelations[]> {
-  if (!supabaseAdmin) return [];
+  if (!supabase) return [];
 
   const { q, tipe, kategori = [] } = params;
 
   try {
-    let query = supabaseAdmin.from("barangs").select(barangSelect).order("waktu", { ascending: false });
+    let query = supabase
+      .from("barangs")
+      .select(barangSelect)
+      .order("waktu", { ascending: false });
 
     if (kategori.length > 0) {
       query = query.in("kategori_id", kategori);
@@ -216,7 +227,7 @@ export async function searchBarangs(params: SearchParams): Promise<BarangWithRel
         (barang) =>
           barang.nama.toLowerCase().includes(needle) ||
           (barang.kategori?.nama?.toLowerCase().includes(needle) ?? false) ||
-          (barang.lokasi?.toLowerCase().includes(needle) ?? false),
+          (barang.lokasi?.toLowerCase().includes(needle) ?? false)
       );
     }
 
@@ -237,11 +248,12 @@ export async function searchBarangs(params: SearchParams): Promise<BarangWithRel
   }
 }
 
+// 🔹 Get all kategoris
 export async function getAllKategoris(): Promise<Kategori[]> {
-  if (!supabaseAdmin) return [];
+  if (!supabase) return [];
 
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from("kategoris")
       .select("id, nama")
       .order("nama", { ascending: true });

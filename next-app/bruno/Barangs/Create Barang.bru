@@ -1,0 +1,61 @@
+meta {
+  name: Create Barang
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{apiUrl}}/barangs
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "nama": "Laptop Asus ROG",
+    "tipeId": 1,
+    "kategoriId": 1,
+    "statusId": 1,
+    "waktu": "2025-10-20T10:00:00Z",
+    "lokasi": "Gedung A Lantai 3",
+    "kontak": "081234567890",
+    "deskripsi": "Laptop gaming warna hitam, ada stiker di cover",
+    "foto": "https://example.com/foto.jpg"
+  }
+}
+
+tests {
+  test("should return 201 on successful creation", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  
+  test("should return created barang", function() {
+    const data = res.getBody();
+    expect(data).to.have.property('data');
+    expect(data.data).to.have.property('id');
+  });
+}
+
+docs {
+  # Create Barang (Lapor Barang)
+  
+  **Authentication Required**
+  
+  Gunakan Bearer token dari response login.
+  Token akan otomatis digunakan dari environment variable 'authToken'.
+  
+  Body Parameters:
+  - nama: string (required)
+  - tipeId: number (required) - 1=Hilang, 2=Temuan
+  - kategoriId: number (required)
+  - statusId: number (required)
+  - waktu: ISO string (optional)
+  - lokasi: string (optional)
+  - kontak: string (optional)
+  - deskripsi: string (optional)
+  - foto: string URL (optional)
+}
