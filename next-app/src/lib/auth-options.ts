@@ -1,7 +1,12 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { supabaseAdmin } from "./supabase";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 type SupabaseUserRow = {
   id: number;
@@ -14,12 +19,8 @@ type SupabaseUserRow = {
 };
 
 export const authOptions: NextAuthOptions = {
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/login",
-  },
+  session: { strategy: "jwt" },
+  pages: { signIn: "/login" },
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -32,17 +33,14 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email dan password wajib diisi.");
         }
 
-        if (!supabaseAdmin) {
-          throw new Error("Supabase belum dikonfigurasi.");
-        }
-
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
           .from("users")
           .select("id, name, email, username, no_telepon, password, role")
           .eq("email", credentials.email)
           .maybeSingle<SupabaseUserRow>();
 
         if (error || !data) {
+          console.error(error);
           throw new Error("Email atau password tidak valid.");
         }
 
@@ -63,9 +61,7 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as { role: string }).role;
-      }
+      if (user) token.role = (user as unknown as { role: string }).role;
       return token;
     },
     async session({ session, token }) {
@@ -76,4 +72,5 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
+  secret: process.env.NEXTAUTH_SECRET,
 };
