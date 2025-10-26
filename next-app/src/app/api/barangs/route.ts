@@ -39,46 +39,95 @@ export async function POST(request: NextRequest) {
 
   try {
     const json = await request.json();
-    const payload = {
-      ...json,
-      tipeId: Number(json.tipeId),
-      kategoriId: Number(json.kategoriId),
-      statusId: Number(json.statusId),
-    };
+    
+    // Determine tipe_id: 1 for hilang, 2 for temuan
+    let tipeId: number;
+    if (json.tipe === 'hilang') {
+      tipeId = 1;
+    } else if (json.tipe === 'temuan') {
+      tipeId = 2;
+    } else {
+      tipeId = Number(json.tipeId) || 2; // default to temuan
+    }
 
-    const parsed = barangSchema.safeParse(payload);
+    // Get or create kategori_id
+    let kategoriId: number;
+    
+    if (json.kategoriId) {
+      kategoriId = Number(json.kategoriId);
+    } else if (json.kategori) {
+      // Check if kategori exists by name
+      const { data: existingKategori } = await supabase
+        .from('kategoris')
+        .select('id')
+        .ilike('nama', json.kategori)
+        .single();
 
-    if (!parsed.success) {
+      if (existingKategori) {
+        kategoriId = existingKategori.id;
+      } else {
+        // Create new kategori
+        const { data: newKategori, error: kategoriError } = await supabase
+          .from('kategoris')
+          .insert({ nama: json.kategori })
+          .select('id')
+          .single();
+
+        if (kategoriError || !newKategori) {
+          console.error('Kategori insert error:', kategoriError);
+          return NextResponse.json(
+            { message: 'Gagal membuat kategori baru' },
+            { status: 500 }
+          );
+        }
+
+        kategoriId = newKategori.id;
+      }
+    } else {
       return NextResponse.json(
-        { message: "Validasi gagal", errors: parsed.error.flatten() },
+        { message: 'Kategori diperlukan' },
         { status: 422 }
       );
     }
 
-    const data = parsed.data;
-    const pelaporId = user.id;
+    // Get pelapor_id from authenticated user
+    const pelaporId = Number(user.id);
 
-    // 🔹 Insert pakai supabase publik
+    // Default status_id (1 = Belum Dikembalikan)
+    const statusId = Number(json.statusId) || 1;
+
+    // Validate required fields
+    if (!json.nama) {
+      return NextResponse.json(
+        { message: 'Nama barang diperlukan' },
+        { status: 422 }
+      );
+    }
+
+    // Insert barang
     const { data: inserted, error: insertError } = await supabase
       .from("barangs")
       .insert({
-        nama: data.nama,
-        tipe_id: data.tipeId,
-        kategori_id: data.kategoriId,
+        nama: json.nama,
+        tipe_id: tipeId,
+        kategori_id: kategoriId,
         pelapor_id: pelaporId,
-        waktu: data.waktu ? new Date(data.waktu).toISOString() : null,
-        lokasi: data.lokasi ?? null,
-        kontak: data.kontak ?? null,
-        deskripsi: data.deskripsi ?? null,
-        foto: data.foto ?? null,
-        status_id: data.statusId,
+        waktu: json.waktu ? new Date(json.waktu).toISOString() : null,
+        lokasi: json.lokasi ?? null,
+        kontak: json.kontak ?? null,
+        deskripsi: json.deskripsi ?? null,
+        foto: json.foto ?? null,
+        status_id: statusId,
       })
       .select("id")
       .single();
 
     if (insertError || !inserted) {
       console.error("Insert error:", insertError);
-      throw new Error("Gagal menyimpan data barang.");
+      return NextResponse.json(
+        { message: "Gagal menyimpan data barang." },
+        { status: 500 }
+      );
     }
 
     const barang = await getBarangById(inserted.id);
