@@ -1,298 +1,183 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { useState } from "react";
 
 export default function LaporTemuanPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    nama: '',
-    kategoriId: '',
-    waktu: '',
-    lokasi: '',
-    deskripsi: '',
-    kontak: '',
-    foto: null as File | null,
-  });
+    const [formData, setFormData] = useState({
+        nama: "",
+        kategori: "",
+        waktu: "",
+        lokasi: "",
+        deskripsi: "",
+        kontak: "",
+        foto: null as File | null,
+    });
 
-  const categories = [
-    { id: 1, name: 'Dompet' },
-    { id: 2, name: 'Kunci' },
-    { id: 3, name: 'Jam' },
-    { id: 4, name: 'Smartphone' },
-    { id: 5, name: 'Elektronik' },
-    { id: 6, name: 'Botol Minum' },
-    { id: 7, name: 'Alat Tulis' },
-    { id: 8, name: 'Pakaian' },
-    { id: 9, name: 'Dokumen' },
-    { id: 10, name: 'Lainnya' },
-  ];
+    const handleChange = (
+        e: React.ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >
+    ) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] ?? null;
+        setFormData((prev) => ({ ...prev, foto: file }));
+    };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData((prev) => ({
-        ...prev,
-        foto: e.target.files![0],
-      }));
-    }
-  };
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        alert("Laporan barang temuan dikirim (simulasi).");
+    };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+    return (
+        <section className="bg-[#f4f4f4] pt-20 sm:pt-28 md:pt-32 sm:pb-10 px-0 sm:px-4 md:px-[100px] font-poppins">
+            <div className="bg-white max-w-[1232px] sm:mx-8 md:mx-auto p-8 rounded-none sm:rounded-[20px]">
+                <h2 className="text-[28px] text-[#193a6f] font-bold mb-2">
+                    Lapor Barang Temuan
+                </h2>
+                <p className="text-[16px] text-black mb-4">
+                    Menemukan barang yang bukan milikmu? Isi formulir berikut
+                    untuk membantu pemilik yang kehilangan menemukan barangnya.
+                    Cantumkan detail lokasi, foto, dan ciri-ciri barang agar
+                    mudah dikenali oleh pemilik.
+                </p>
+                <hr className="mb-6 border-[#b0b0b0]" />
 
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Silakan login terlebih dahulu');
-        router.push('/login');
-        return;
-      }
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Nama Barang */}
+                    <div>
+                        <label className="font-semibold text-[16px] text-black">
+                            Nama Barang
+                        </label>
+                        <input
+                            type="text"
+                            name="nama"
+                            placeholder="Masukkan nama barang"
+                            value={formData.nama}
+                            onChange={handleChange}
+                            required
+                            className="w-full border border-[#b0b0b0] rounded-[10px] px-4 py-2 mt-1 outline-none focus:border-blue-400 focus:ring-0"
+                        />
+                    </div>
 
-      // Upload foto jika ada
-      let fotoUrl = null;
-      if (formData.foto) {
-        const formDataUpload = new FormData();
-        formDataUpload.append('file', formData.foto);
+                    {/* Kategori */}
+                    <div>
+                        <label className="font-semibold text-[16px] text-black">
+                            Kategori
+                        </label>
+                        <select
+                            name="kategori"
+                            value={formData.kategori}
+                            onChange={handleChange}
+                            required
+                            className="w-full border border-[#b0b0b0] rounded-[10px] px-4 py-2 mt-1 outline-none focus:border-blue-400 focus:ring-0"
+                        >
+                            <option value="">Pilih kategori</option>
+                            <option value="Dompet">Dompet</option>
+                            <option value="Kunci">Kunci</option>
+                            <option value="Aksesoris">Aksesoris</option>
+                            <option value="Smartphone">Smartphone</option>
+                            <option value="Elektronik">Elektronik</option>
+                            <option value="Botol Minum">Botol Minum</option>
+                            <option value="Alat Tulis">Alat Tulis</option>
+                            <option value="Pakaian">Pakaian</option>
+                            <option value="Dokumen">Dokumen</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
 
-        // TODO: Implement file upload to Supabase Storage
-        // For now, we'll use a placeholder
-        fotoUrl = '/assets/no_image.png';
-      }
+                    {/* Waktu */}
+                    <div>
+                        <label className="font-semibold text-[16px] text-black">
+                            Waktu
+                        </label>
+                        <input
+                            type="datetime-local"
+                            name="waktu"
+                            value={formData.waktu}
+                            onChange={handleChange}
+                            onClick={(e) => e.currentTarget.showPicker?.()}
+                            required
+                            className="w-full border border-[#b0b0b0] rounded-[10px] px-4 py-2 mt-1 outline-none focus:border-blue-400 focus:ring-0 cursor-pointer"
+                        />
+                    </div>
 
-      // Create barang temuan
-      const response = await fetch('/api/barangs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          nama: formData.nama,
-          kategoriId: parseInt(formData.kategoriId),
-          tipe: 'temuan',
-          lokasi: formData.lokasi,
-          waktu: formData.waktu,
-          deskripsi: formData.deskripsi,
-          kontak: formData.kontak,
-          foto: fotoUrl,
-        }),
-      });
+                    {/* Lokasi */}
+                    <div>
+                        <label className="font-semibold text-[16px] text-black">
+                            Lokasi
+                        </label>
+                        <input
+                            type="text"
+                            name="lokasi"
+                            placeholder="Masukkan lokasi"
+                            value={formData.lokasi}
+                            onChange={handleChange}
+                            required
+                            className="w-full border border-[#b0b0b0] rounded-[10px] px-4 py-2 mt-1 outline-none focus:border-blue-400 focus:ring-0"
+                        />
+                    </div>
 
-      const data = await response.json();
+                    {/* Deskripsi */}
+                    <div>
+                        <label className="font-semibold text-[16px] text-black">
+                            Deskripsi
+                        </label>
+                        <textarea
+                            name="deskripsi"
+                            placeholder="Masukkan deskripsi"
+                            rows={3}
+                            value={formData.deskripsi}
+                            onChange={handleChange}
+                            className="w-full border border-[#b0b0b0] rounded-[10px] px-4 py-2 mt-1 outline-none focus:border-blue-400 focus:ring-0"
+                        ></textarea>
+                    </div>
 
-      if (response.ok) {
-        alert('Laporan berhasil dikirim!');
-        router.push('/barangs');
-      } else {
-        alert(data.message || 'Gagal mengirim laporan');
-      }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('Terjadi kesalahan saat mengirim laporan');
-    } finally {
-      setLoading(false);
-    }
-  };
+                    {/* Kontak */}
+                    <div>
+                        <label className="font-semibold text-[16px] text-black">
+                            Kontak
+                        </label>
+                        <input
+                            type="text"
+                            name="kontak"
+                            placeholder="Masukkan kontak"
+                            value={formData.kontak}
+                            onChange={handleChange}
+                            required
+                            className="w-full border border-[#b0b0b0] rounded-[10px] px-4 py-2 mt-1 outline-none focus:border-blue-400 focus:ring-0"
+                        />
+                    </div>
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-3xl">
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            Lapor Barang Temuan
-          </h1>
-          <p className="text-gray-600 text-sm mb-8">
-            Isi formulir berikut untuk melaporkan barang yang kamu temukan.
-            Mohon lengkapi informasi secara jelas agar mempermudah proses
-            pencocokan dengan pemilik barang yang hilang.
-          </p>
+                    {/* Foto Barang */}
+                    <div>
+                        <label className="font-semibold text-[16px] text-black">
+                            Foto Barang
+                        </label>
+                        <input
+                            type="file"
+                            name="foto"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            required
+                            className="w-full border border-[#b0b0b0] rounded-[10px] px-4 py-2 mt-1 cursor-pointer file:mr-4 file:rounded-md file:border-0 file:bg-blue-600 file:px-4 file:py-1 file:text-white file:transition file:hover:bg-blue-500"
+                        />
+                    </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Nama Barang */}
-            <div>
-              <label
-                htmlFor="nama"
-                className="block text-sm font-semibold text-gray-800 mb-2"
-              >
-                Nama Barang
-              </label>
-              <input
-                type="text"
-                id="nama"
-                name="nama"
-                value={formData.nama}
-                onChange={handleChange}
-                placeholder="Masukkan nama barang"
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+                    {/* Tombol Submit */}
+                    <div className="w-full sm:max-w-sm sm:mx-auto">
+                        <button
+                            type="submit"
+                            className="w-full bg-[#f98125] text-white px-6 py-2 rounded-[10px] font-bold transition hover:bg-[#d96f1f]"
+                        >
+                            Kirim Laporan
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            {/* Kategori */}
-            <div>
-              <label
-                htmlFor="kategoriId"
-                className="block text-sm font-semibold text-gray-800 mb-2"
-              >
-                Kategori
-              </label>
-              <select
-                id="kategoriId"
-                name="kategoriId"
-                value={formData.kategoriId}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
-              >
-                <option value="">Pilih kategori</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Waktu */}
-            <div>
-              <label
-                htmlFor="waktu"
-                className="block text-sm font-semibold text-gray-800 mb-2"
-              >
-                Waktu
-              </label>
-              <input
-                type="datetime-local"
-                id="waktu"
-                name="waktu"
-                value={formData.waktu}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Lokasi */}
-            <div>
-              <label
-                htmlFor="lokasi"
-                className="block text-sm font-semibold text-gray-800 mb-2"
-              >
-                Lokasi
-              </label>
-              <input
-                type="text"
-                id="lokasi"
-                name="lokasi"
-                value={formData.lokasi}
-                onChange={handleChange}
-                placeholder="Masukkan lokasi"
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Deskripsi */}
-            <div>
-              <label
-                htmlFor="deskripsi"
-                className="block text-sm font-semibold text-gray-800 mb-2"
-              >
-                Deskripsi
-              </label>
-              <textarea
-                id="deskripsi"
-                name="deskripsi"
-                value={formData.deskripsi}
-                onChange={handleChange}
-                placeholder="Masukkan deskripsi"
-                rows={5}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              />
-            </div>
-
-            {/* Kontak */}
-            <div>
-              <label
-                htmlFor="kontak"
-                className="block text-sm font-semibold text-gray-800 mb-2"
-              >
-                Kontak
-              </label>
-              <input
-                type="text"
-                id="kontak"
-                name="kontak"
-                value={formData.kontak}
-                onChange={handleChange}
-                placeholder="Masukkan kontak"
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Foto Barang */}
-            <div>
-              <label
-                htmlFor="foto"
-                className="block text-sm font-semibold text-gray-800 mb-2"
-              >
-                Foto Barang
-              </label>
-              <div className="flex items-center gap-4">
-                <label
-                  htmlFor="foto"
-                  className="flex items-center gap-2 px-6 py-3 bg-gray-800 text-white rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
-                >
-                  <Image
-                    src="/assets/upload.svg"
-                    alt="Upload"
-                    width={20}
-                    height={20}
-                  />
-                  <span className="font-medium">Upload gambar</span>
-                </label>
-                <input
-                  type="file"
-                  id="foto"
-                  name="foto"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <span className="text-sm text-gray-500">
-                  {formData.foto ? formData.foto.name : 'No file chosen'}
-                </span>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <div className="pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Mengirim...' : 'Kirim Laporan'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
+        </section>
+    );
 }
