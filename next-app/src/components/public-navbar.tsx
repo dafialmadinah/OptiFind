@@ -9,17 +9,27 @@ import { useAuth } from "@/lib/auth-context";
 export function PublicNavbar() {
     const router = useRouter();
     const { user, signOut: authSignOut } = useAuth();
+
     const [searchQuery, setSearchQuery] = useState("");
     const [menuOpen, setMenuOpen] = useState(false);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [laporOpen, setLaporOpen] = useState(false);
+    const [showConfirmLogout, setShowConfirmLogout] = useState(false);
+    const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
+
+    // otomatis sembunyikan popup logout setelah 3 detik
+    useEffect(() => {
+        if (showConfirmLogout) {
+            const timeout = setTimeout(() => setShowConfirmLogout(false), 2000);
+            return () => clearTimeout(timeout);
+        }
+    }, [showConfirmLogout]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            window.location.href = `/cari?q=${encodeURIComponent(
-                searchQuery
-            )}`;
+            window.location.href = `/cari?q=${encodeURIComponent(searchQuery)}`;
         }
     };
 
@@ -42,7 +52,7 @@ export function PublicNavbar() {
     };
 
     return (
-        <header className="bg-[#1e3a8a] text-white shadow-md">
+        <header className="bg-[#1e3a8a] text-white shadow-md relative z-50">
             <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between gap-4">
                     {/* Logo */}
@@ -60,7 +70,7 @@ export function PublicNavbar() {
                         </div>
                     </Link>
 
-                    {/* Search Bar - Center */}
+                    {/* Search Bar */}
                     <div className="flex-1 max-w-2xl mx-4">
                         <form onSubmit={handleSearch}>
                             <div className="relative">
@@ -78,26 +88,99 @@ export function PublicNavbar() {
                                     onChange={(e) =>
                                         setSearchQuery(e.target.value)
                                     }
-                                    className="w-full px-4 py-2.5 pl-10 pr-12 rounded-lg text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                    className="w-full px-4 py-2.5 rounded-lg text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                />
+                                <Image
+                                    src="/assets/cari.svg"
+                                    alt="Search"
+                                    width={18}
+                                    height={18}
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 opacity-60"
                                 />
                             </div>
                         </form>
                     </div>
 
-                    {/* Navigation Menu - Right */}
-                    <nav className="hidden lg:flex items-center gap-6 flex-shrink-0">
-                        <Link
-                            href="/barangs/lapor-hilang"
-                            className="text-white hover:text-blue-200 transition-colors font-medium whitespace-nowrap"
+                    {/* Desktop Menu */}
+                    <nav className="hidden lg:flex items-center gap-6 flex-shrink-0 relative">
+                        {/* Lapor Barang Dropdown */}
+                        <div
+                            className="relative"
+                            onMouseEnter={() => {
+                                if (hoverTimeout.current)
+                                    clearTimeout(hoverTimeout.current);
+                                setLaporOpen(true);
+                            }}
+                            onMouseLeave={() => {
+                                hoverTimeout.current = setTimeout(
+                                    () => setLaporOpen(false),
+                                    200
+                                );
+                            }}
                         >
-                            Lapor Barang
-                        </Link>
+                            <button className="text-white hover:text-blue-200 transition-colors font-medium whitespace-nowrap flex items-center gap-1">
+                                Lapor Barang
+                                <svg
+                                    className={`w-4 h-4 transition-transform ${
+                                        laporOpen ? "rotate-180" : ""
+                                    }`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 9l-7 7-7-7"
+                                    />
+                                </svg>
+                            </button>
+
+                            <div
+                                className={`absolute left-0 mt-2 bg-white text-gray-800 rounded-lg shadow-lg border border-gray-200 w-40 py-2 z-50
+                                transition-all duration-300 ease-out
+                                ${
+                                    laporOpen
+                                        ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
+                                        : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
+                                }`}
+                                onMouseEnter={() => {
+                                    if (hoverTimeout.current)
+                                        clearTimeout(hoverTimeout.current);
+                                    setLaporOpen(true);
+                                }}
+                                onMouseLeave={() => {
+                                    hoverTimeout.current = setTimeout(
+                                        () => setLaporOpen(false),
+                                        200
+                                    );
+                                }}
+                            >
+                                <Link
+                                    href="/barangs/lapor-hilang"
+                                    className="block px-4 py-2 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                >
+                                    Barang Hilang
+                                </Link>
+                                <Link
+                                    href="/barangs/lapor-temuan"
+                                    className="block px-4 py-2 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                >
+                                    Barang Temuan
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Riwayat Laporan */}
                         <Link
                             href="/riwayat-laporan"
                             className="text-white hover:text-blue-200 transition-colors font-medium whitespace-nowrap"
                         >
                             Riwayat Laporan
                         </Link>
+
+                        {/* Akun / Logout */}
                         {user ? (
                             <div className="relative" ref={dropdownRef}>
                                 <button
@@ -152,6 +235,35 @@ export function PublicNavbar() {
                                         </button>
                                     </div>
                                 )}
+                                <div
+                                    className={`absolute right-0 mt-2 bg-white text-gray-800 rounded-lg shadow-lg border border-gray-200 py-3 px-4 z-50
+                                    transition-all duration-300 ease-out
+                                    ${
+                                        showConfirmLogout
+                                            ? "opacity-100 translate-y-0 scale-100"
+                                            : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
+                                    }`}
+                                >
+                                    <p className="text-sm mb-3 text-center">
+                                        Yakin ingin keluar?
+                                    </p>
+                                    <div className="flex justify-center gap-3">
+                                        <button
+                                            onClick={() =>
+                                                setShowConfirmLogout(false)
+                                            }
+                                            className="px-4 py-1.5 text-sm rounded-md bg-gray-200 hover:bg-gray-300 transition"
+                                        >
+                                            Batal
+                                        </button>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="px-6 py-1.5 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+                                        >
+                                            Ya
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         ) : (
                             <Link
@@ -193,13 +305,55 @@ export function PublicNavbar() {
                 {menuOpen && (
                     <div className="lg:hidden mt-4 pb-4 border-t border-blue-700 pt-4">
                         <nav className="flex flex-col gap-3">
-                            <Link
-                                href="/barangs/lapor-hilang"
-                                onClick={() => setMenuOpen(false)}
-                                className="text-white hover:text-blue-200 transition-colors font-medium py-2"
-                            >
-                                Lapor Barang
-                            </Link>
+                            <div className="flex flex-col">
+                                <button
+                                    onClick={() => setLaporOpen(!laporOpen)}
+                                    className="text-white hover:text-blue-200 transition-colors font-medium flex items-center justify-between py-2"
+                                >
+                                    Lapor Barang
+                                    <svg
+                                        className={`w-4 h-4 transition-transform ${
+                                            laporOpen ? "rotate-180" : ""
+                                        }`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M19 9l-7 7-7-7"
+                                        />
+                                    </svg>
+                                </button>
+
+                                {laporOpen && (
+                                    <div className="pl-4 flex flex-col gap-2 transition-all duration-300 ease-out">
+                                        <Link
+                                            href="/barangs/lapor-hilang"
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                setLaporOpen(false);
+                                            }}
+                                            className="text-white/90 hover:text-blue-200 transition-colors py-1"
+                                        >
+                                            Barang Hilang
+                                        </Link>
+                                        <Link
+                                            href="/barangs/lapor-temuan"
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                setLaporOpen(false);
+                                            }}
+                                            className="text-white/90 hover:text-blue-200 transition-colors py-1"
+                                        >
+                                            Barang Temuan
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+
                             <Link
                                 href="/riwayat-laporan"
                                 onClick={() => setMenuOpen(false)}
@@ -207,23 +361,16 @@ export function PublicNavbar() {
                             >
                                 Riwayat Laporan
                             </Link>
+
                             {user ? (
                                 <>
-                                    <div className="py-2 border-t border-blue-700 mt-2">
-                                        <p className="text-sm font-medium text-white">
-                                            {user.user_metadata?.name || "User"}
-                                        </p>
-                                        <p className="text-xs text-white/70 truncate">
-                                            {user.email}
-                                        </p>
-                                    </div>
                                     <button
-                                        onClick={async () => {
-                                            setMenuOpen(false);
-                                            await authSignOut();
-                                            router.push("/");
-                                        }}
-                                        className="text-red-500 hover:text-blue-200 transition-colors font-medium text-left py-2 flex items-center gap-2"
+                                        onClick={() =>
+                                            setShowConfirmLogout(
+                                                !showConfirmLogout
+                                            )
+                                        }
+                                        className="text-white hover:text-blue-200 transition-colors font-medium text-left py-2"
                                     >
                                         <svg
                                             className="w-4 h-4"
@@ -240,6 +387,35 @@ export function PublicNavbar() {
                                         </svg>
                                         Keluar
                                     </button>
+
+                                    <div
+                                        className={`mt-2 bg-white text-gray-800 rounded-lg shadow-lg border border-gray-200 w-full py-3 px-4 transition-all duration-300 ease-out
+                                        ${
+                                            showConfirmLogout
+                                                ? "opacity-100 translate-y-0 scale-100"
+                                                : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
+                                        }`}
+                                    >
+                                        <p className="text-sm mb-3 text-center">
+                                            Yakin ingin keluar?
+                                        </p>
+                                        <div className="flex justify-center gap-3">
+                                            <button
+                                                onClick={() =>
+                                                    setShowConfirmLogout(false)
+                                                }
+                                                className="px-3 py-1.5 text-sm rounded-md bg-gray-200 hover:bg-gray-300 transition"
+                                            >
+                                                Batal
+                                            </button>
+                                            <button
+                                                onClick={handleLogout}
+                                                className="px-3 py-1.5 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+                                            >
+                                                Ya, Keluar
+                                            </button>
+                                        </div>
+                                    </div>
                                 </>
                             ) : (
                                 <Link
