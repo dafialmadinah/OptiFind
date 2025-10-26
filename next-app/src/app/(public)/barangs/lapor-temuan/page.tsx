@@ -31,7 +31,7 @@ export default function LaporTemuanPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!formData.foto) {
             alert("Silakan pilih foto barang terlebih dahulu.");
             return;
@@ -63,7 +63,7 @@ export default function LaporTemuanPage() {
 
             if (response.status === 401) {
                 alert("Anda harus login terlebih dahulu.");
-                window.location.href = '/login';
+                window.location.href = "/login";
                 return;
             }
 
@@ -73,7 +73,7 @@ export default function LaporTemuanPage() {
             }
 
             alert("Laporan berhasil dikirim!");
-            
+
             // Reset form
             setFormData({
                 nama: "",
@@ -84,11 +84,12 @@ export default function LaporTemuanPage() {
                 kontak: "",
                 foto: null,
             });
-            
-            // Reset file input
-            const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-            if (fileInput) fileInput.value = "";
 
+            // Reset file input
+            const fileInput = document.querySelector(
+                'input[type="file"]'
+            ) as HTMLInputElement;
+            if (fileInput) fileInput.value = "";
         } catch (error) {
             console.error("Error submitting form:", error);
             alert(
@@ -102,8 +103,8 @@ export default function LaporTemuanPage() {
     };
 
     return (
-        <section className="bg-[#f4f4f4] pt-20 sm:pt-28 md:pt-32 sm:pb-10 px-0 sm:px-4 md:px-[100px] font-poppins">
-            <div className="bg-white max-w-[1232px] sm:mx-8 md:mx-auto p-8 rounded-none sm:rounded-[20px]">
+        <section className="bg-[#f4f4f4] pt-8 sm:pt-12 pb-12 px-4 sm:px-8 md:px-[100px] font-poppins">
+            <div className="mx-auto max-w-[1232px] rounded-[20px] bg-white p-8">
                 <h2 className="text-[28px] text-[#193a6f] font-bold mb-2">
                     Lapor Barang Temuan
                 </h2>
