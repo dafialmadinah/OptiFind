@@ -30,6 +30,7 @@ export default function CariPage() {
     const router = useRouter();
     const query = searchParams.get("q") ?? "";
     const tipe = searchParams.get("tipe") ?? "Temuan";
+    const kategoriParam = searchParams.get("kategori");
 
     // ✅ ubah ke BarangWithRelations
     const [barangs, setBarangs] = useState<BarangWithRelations[]>([]);
@@ -37,7 +38,7 @@ export default function CariPage() {
         BarangWithRelations[]
     >([]);
     const [filters, setFilters] = useState<FilterState>({
-        kategori: [],
+        kategori: kategoriParam ? [Number(kategoriParam)] : [],
         waktu: "",
         lokasi: "",
         urutkan: "",
@@ -47,7 +48,17 @@ export default function CariPage() {
 
     useEffect(() => {
         fetchData();
-    }, [query, tipe]);
+    }, [query, tipe, kategoriParam]);
+
+    // Update filter state when kategori param changes
+    useEffect(() => {
+        if (kategoriParam) {
+            setFilters(prev => ({
+                ...prev,
+                kategori: [Number(kategoriParam)]
+            }));
+        }
+    }, [kategoriParam]);
 
     useEffect(() => {
         applyFilters();
@@ -56,11 +67,9 @@ export default function CariPage() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const kategoriParam = searchParams
-                .getAll("kategori")
-                .map((k) => Number(k));
+            const kategoriParams = kategoriParam ? [Number(kategoriParam)] : [];
             const [barangRes, kategoriRes] = await Promise.all([
-                searchBarangs({ q: query, tipe, kategori: kategoriParam }),
+                searchBarangs({ q: query, tipe, kategori: kategoriParams }),
                 getAllKategoris(),
             ]);
 
@@ -73,6 +82,14 @@ export default function CariPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const getSearchTitle = () => {
+        if (kategoriParam) {
+            const kategori = kategoris.find(k => k.id === Number(kategoriParam));
+            return kategori ? `${kategori.nama}` : "Semua barang";
+        }
+        return query ? `"${query}"` : "Semua barang";
     };
 
     const applyFilters = () => {
@@ -162,14 +179,17 @@ export default function CariPage() {
                     <h1 className="text-xl font-semibold text-gray-900 mb-2">
                         Hasil cari untuk:{" "}
                         <span className="text-blue-800">
-                            {query ? `"${query}"` : "Semua barang"}
+                            {getSearchTitle()}
                         </span>
                     </h1>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     <div className="lg:col-span-1">
-                        <BarangFilter onFilterChange={handleFilterChange} />
+                        <BarangFilter 
+                            onFilterChange={handleFilterChange}
+                            initialFilters={filters}
+                        />
                     </div>
 
                     <div className="lg:col-span-3 space-y-6">
