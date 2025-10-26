@@ -1,9 +1,11 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
 import { LandingNavbar } from "@/components/landing-navbar";
+import { HomeSplashScreen } from "@/components/home-splash-screen";
 
 type Step = {
   title: string;
@@ -138,14 +140,17 @@ const SOCIAL_LINKS: SocialLink[] = [
 
 export default function LandingPage() {
   return (
-    <div className="bg-[#f2f5ff] text-slate-900">
-      <LandingNavbar />
-      <HeroSection />
-      <HowItWorks />
-      <CommunityImpact />
-      <Testimonials />
-      <LandingFooter />
-    </div>
+    <>
+      <HomeSplashScreen />
+      <div className="bg-[#f2f5ff] text-slate-900">
+        <LandingNavbar />
+        <HeroSection />
+        <HowItWorks />
+        <CommunityImpact />
+        <Testimonials />
+        <LandingFooter />
+      </div>
+    </>
   );
 }
 
