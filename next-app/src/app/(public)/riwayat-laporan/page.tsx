@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BarangFilter } from '@/components/barang-filter';
@@ -29,11 +30,11 @@ interface FilterState {
 
 export default function RiwayatLaporanPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState<'temuan' | 'hilang'>('temuan');
   const [barangs, setBarangs] = useState<Barang[]>([]);
   const [filteredBarangs, setFilteredBarangs] = useState<Barang[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     kategori: [],
     waktu: '',
@@ -41,29 +42,19 @@ export default function RiwayatLaporanPage() {
     urutkan: '',
   });
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  const isAuthenticated = status === 'authenticated';
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchBarangs();
+    } else if (status === 'unauthenticated') {
+      setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, status]);
 
   useEffect(() => {
     applyFilters();
   }, [barangs, filters, activeTab]);
-
-  const checkAuth = () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      setIsAuthenticated(true);
-    } else {
-      setIsAuthenticated(false);
-      setLoading(false);
-    }
-  };
 
   const fetchBarangs = async () => {
     try {
