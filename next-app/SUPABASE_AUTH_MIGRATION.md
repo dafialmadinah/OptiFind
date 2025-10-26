@@ -42,46 +42,71 @@ Tambahkan ke `.env.local`:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # Optional tapi recommended
 NEXTAUTH_SECRET=your-secret-for-password-hashing
 ```
 
 **Cara mendapatkan keys:**
 1. Buka Supabase Dashboard
 2. Settings → API
-3. Copy `URL` dan `anon/public key`
+3. Copy `URL`, `anon/public key`, dan **optionally** `service_role key`
 
-**Note:** Kita hanya menggunakan **anon key** saja. Anon key aman digunakan di frontend karena dilindungi oleh Row Level Security (RLS) policies.
+**Note tentang Service Role Key:**
+- **Primary auth menggunakan anon key** (aman karena dilindungi RLS)
+- **Service role key opsional**, hanya digunakan untuk insert user ke database saat registrasi
+- Jika tidak ada service role key, akan fallback ke anon key (butuh RLS policy yang benar)
 
 ### 2. Update Database Schema
 
-Ubah kolom `id` di tabel `users` menjadi UUID (opsional tapi direkomendasikan):
+**PENTING:** Kolom `id` di tabel `users` harus bertipe **UUID**, bukan BIGINT/INTEGER!
+
+#### Jika Database Masih Kosong (Recommended):
+
+Jalankan `migration-users-to-uuid.sql` di Supabase SQL Editor:
 
 ```sql
--- Backup data users terlebih dahulu!
+-- File: migration-users-to-uuid.sql
+-- Script ini akan drop dan recreate tabel users dengan UUID
+```
 
--- 1. Buat tabel baru dengan UUID
-CREATE TABLE users_new (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT,
-  username TEXT UNIQUE,
+#### Jika Sudah Ada Data Users:
+
+**Opsi 1 - Reset Database (Hapus semua data):**
+1. Jalankan `migration-users-to-uuid.sql`
+2. Data users dan barangs akan terhapus
+3. User perlu register ulang
+
+**Opsi 2 - Preserve Data (Advanced):**
+1. Export data users dan barangs terlebih dahulu
+2. Jalankan `migration-users-to-uuid.sql`
+3. Untuk setiap user lama:
+   - Buat user baru via Supabase Auth Dashboard
+   - Insert ke tabel users dengan UUID dari Supabase Auth
+   - Update barangs.pelapor_id dengan UUID yang baru
+
+#### Verifikasi Tipe Data:
+
+Cek di Supabase → Table Editor → users → id column:
+- ✅ Type harus: `uuid`
+- ❌ Jika masih: `int8` / `bigint` → perlu migration
+
+**Struktur tabel yang benar:**
+
+```sql
+CREATE TABLE users (
+  id UUID PRIMARY KEY,  -- BUKAN BIGINT!
+  name TEXT NOT NULL,
+  username TEXT UNIQUE NOT NULL,
   email TEXT UNIQUE NOT NULL,
   no_telepon TEXT,
   password TEXT NOT NULL,
   role TEXT DEFAULT 'user',
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Copy data (manual, karena id berubah dari int ke uuid)
--- Untuk setiap user lama, buat user baru di Supabase Auth dulu
--- Lalu insert ke users_new dengan UUID dari Supabase Auth
-
--- 3. Update foreign keys di tabel barangs
+-- barangs.pelapor_id juga harus UUID
 ALTER TABLE barangs 
-  ALTER COLUMN pelapor_id TYPE UUID USING pelapor_id::uuid;
-
--- 4. Drop tabel lama dan rename
-DROP TABLE users;
-ALTER TABLE users_new RENAME TO users;
+  ALTER COLUMN pelapor_id TYPE UUID;
 ```
 
 ### 3. Setup Row Level Security (RLS)

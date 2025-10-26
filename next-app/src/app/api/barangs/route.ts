@@ -31,28 +31,21 @@ export async function POST(request: NextRequest) {
   }
 
   if (!supabase) {
-      return NextResponse.json(
-        { message: "Supabase belum dikonfigurasi di server." },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(
+      { message: "Supabase belum dikonfigurasi di server." },
+      { status: 500 }
+    );
+  }
 
   try {
     const json = await request.json();
-    
-    // Determine tipe_id: 1 for hilang, 2 for temuan
-    let tipeId: number;
-    if (json.tipe === 'hilang') {
-      tipeId = 1;
-    } else if (json.tipe === 'temuan') {
-      tipeId = 2;
-    } else {
-      tipeId = Number(json.tipeId) || 2; // default to temuan
-    }
+
+    // Validate tipe (hilang or temuan)
+    const tipe = json.tipe === 'hilang' ? 'hilang' : 'temuan';
 
     // Get or create kategori_id
-    let kategoriId: number;
-    
+    let kategoriId: number | null = null;
+
     if (json.kategoriId) {
       kategoriId = Number(json.kategoriId);
     } else if (json.kategori) {
@@ -61,7 +54,7 @@ export async function POST(request: NextRequest) {
         .from('kategoris')
         .select('id')
         .ilike('nama', json.kategori)
-        .single();
+        .maybeSingle();
 
       if (existingKategori) {
         kategoriId = existingKategori.id;
@@ -83,18 +76,35 @@ export async function POST(request: NextRequest) {
 
         kategoriId = newKategori.id;
       }
+    }
+
+    // Get or create status
+    let statusId: number | null = null;
+    const statusNama = json.status || 'Belum Dikembalikan';
+    
+    const { data: existingStatus } = await supabase
+      .from('statuses')
+      .select('id')
+      .ilike('nama', statusNama)
+      .maybeSingle();
+
+    if (existingStatus) {
+      statusId = existingStatus.id;
     } else {
-      return NextResponse.json(
-        { message: 'Kategori diperlukan' },
-        { status: 422 }
-      );
+      // Create new status
+      const { data: newStatus } = await supabase
+        .from('statuses')
+        .insert({ nama: statusNama })
+        .select('id')
+        .single();
+      
+      if (newStatus) {
+        statusId = newStatus.id;
+      }
     }
 
     // Get pelapor_id from authenticated user (UUID dari Supabase Auth)
     const pelaporId = user.id;
-
-    // Default status_id (1 = Belum Dikembalikan)
-    const statusId = Number(json.statusId) || 1;
 
     // Validate required fields
     if (!json.nama) {
@@ -109,7 +119,7 @@ export async function POST(request: NextRequest) {
       .from("barangs")
       .insert({
         nama: json.nama,
-        tipe_id: tipeId,
+        tipe: tipe,
         kategori_id: kategoriId,
         pelapor_id: pelaporId,
         waktu: json.waktu ? new Date(json.waktu).toISOString() : null,
@@ -125,7 +135,7 @@ export async function POST(request: NextRequest) {
     if (insertError || !inserted) {
       console.error("Insert error:", insertError);
       return NextResponse.json(
-        { message: "Gagal menyimpan data barang." },
+        { message: "Gagal menyimpan data barang: " + (insertError?.message || "Unknown error") },
         { status: 500 }
       );
     }

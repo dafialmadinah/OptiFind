@@ -1,9 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { uploadBarangPhoto } from "@/lib/supabase-storage";
+import { useAuth } from "@/lib/auth-context";
+
+interface Kategori {
+    id: number;
+    nama: string;
+}
 
 export default function LaporTemuanPage() {
+    const router = useRouter();
+    const { user, isLoading: authLoading } = useAuth();
+    const [kategoris, setKategoris] = useState<Kategori[]>([]);
+    const [isLoadingKategoris, setIsLoadingKategoris] = useState(true);
     const [formData, setFormData] = useState({
         nama: "",
         kategori: "",
@@ -14,6 +25,33 @@ export default function LaporTemuanPage() {
         foto: null as File | null,
     });
     const [isUploading, setIsUploading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetch kategoris from API
+    useEffect(() => {
+        async function fetchKategoris() {
+            try {
+                const response = await fetch("/api/kategoris");
+                if (response.ok) {
+                    const { data } = await response.json();
+                    setKategoris(data || []);
+                }
+            } catch (error) {
+                console.error("Failed to fetch kategoris:", error);
+            } finally {
+                setIsLoadingKategoris(false);
+            }
+        }
+        fetchKategoris();
+    }, []);
+
+    // Check if user is logged in
+    useEffect(() => {
+        if (!authLoading && !user) {
+            alert("Anda harus login terlebih dahulu untuk melaporkan barang temuan.");
+            router.push("/login?callbackUrl=/barangs/lapor-temuan");
+        }
+    }, [user, authLoading, router]);
 
     const handleChange = (
         e: React.ChangeEvent<
@@ -31,9 +69,16 @@ export default function LaporTemuanPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError(null);
 
+        if (!user) {
+            alert("Anda harus login terlebih dahulu.");
+            router.push("/login");
+            return;
+        }
+        
         if (!formData.foto) {
-            alert("Silakan pilih foto barang terlebih dahulu.");
+            setError("Silakan pilih foto barang terlebih dahulu.");
             return;
         }
 
@@ -62,8 +107,8 @@ export default function LaporTemuanPage() {
             });
 
             if (response.status === 401) {
-                alert("Anda harus login terlebih dahulu.");
-                window.location.href = "/login";
+                alert("Sesi Anda telah berakhir. Silakan login kembali.");
+                router.push("/login");
                 return;
             }
 
@@ -72,18 +117,11 @@ export default function LaporTemuanPage() {
                 throw new Error(errorData.message || "Gagal mengirim laporan");
             }
 
-            alert("Laporan berhasil dikirim!");
-
-            // Reset form
-            setFormData({
-                nama: "",
-                kategori: "",
-                waktu: "",
-                lokasi: "",
-                deskripsi: "",
-                kontak: "",
-                foto: null,
-            });
+            const result = await response.json();
+            
+            // Success! Redirect to barangs page
+            alert("✅ Laporan barang temuan berhasil dikirim!");
+            router.push("/barangs");
 
             // Reset file input
             const fileInput = document.querySelector(
@@ -92,15 +130,31 @@ export default function LaporTemuanPage() {
             if (fileInput) fileInput.value = "";
         } catch (error) {
             console.error("Error submitting form:", error);
-            alert(
-                error instanceof Error
-                    ? error.message
-                    : "Terjadi kesalahan saat mengirim laporan"
-            );
+            const errorMessage = error instanceof Error
+                ? error.message
+                : "Terjadi kesalahan saat mengirim laporan";
+            setError(errorMessage);
+            alert("❌ " + errorMessage);
         } finally {
             setIsUploading(false);
         }
     };
+
+    // Show loading while checking auth
+    if (authLoading) {
+        return (
+            <section className="bg-[#f4f4f4] min-h-screen pt-20 sm:pt-28 md:pt-32 sm:pb-10 px-0 sm:px-4 md:px-[100px] font-poppins flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Memuat...</p>
+                </div>
+            </section>
+        );
+    }
+
+    if (!user) {
+        return null; // Will redirect in useEffect
+    }
 
     return (
         <section className="bg-[#f4f4f4] pt-8 sm:pt-12 pb-12 px-4 sm:px-8 md:px-[100px] font-poppins">
@@ -143,19 +197,17 @@ export default function LaporTemuanPage() {
                             value={formData.kategori}
                             onChange={handleChange}
                             required
-                            className="w-full border border-[#b0b0b0] rounded-[10px] px-4 py-2 mt-1 outline-none focus:border-blue-400 focus:ring-0"
+                            disabled={isLoadingKategoris}
+                            className="w-full border border-[#b0b0b0] rounded-[10px] px-4 py-2 mt-1 outline-none focus:border-blue-400 focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <option value="">Pilih kategori</option>
-                            <option value="Dompet">Dompet</option>
-                            <option value="Kunci">Kunci</option>
-                            <option value="Aksesoris">Aksesoris</option>
-                            <option value="Smartphone">Smartphone</option>
-                            <option value="Elektronik">Elektronik</option>
-                            <option value="Botol Minum">Botol Minum</option>
-                            <option value="Alat Tulis">Alat Tulis</option>
-                            <option value="Pakaian">Pakaian</option>
-                            <option value="Dokumen">Dokumen</option>
-                            <option value="Lainnya">Lainnya</option>
+                            <option value="">
+                                {isLoadingKategoris ? "Memuat kategori..." : "Pilih kategori"}
+                            </option>
+                            {kategoris.map((kat) => (
+                                <option key={kat.id} value={kat.nama}>
+                                    {kat.nama}
+                                </option>
+                            ))}
                         </select>
                     </div>
 
@@ -227,6 +279,11 @@ export default function LaporTemuanPage() {
                         <label className="font-semibold text-[16px] text-black">
                             Foto Barang
                         </label>
+                        {formData.foto && (
+                            <p className="text-sm text-green-600 mt-1 mb-2">
+                                ✓ File dipilih: {formData.foto.name}
+                            </p>
+                        )}
                         <input
                             type="file"
                             name="foto"
@@ -237,14 +294,28 @@ export default function LaporTemuanPage() {
                         />
                     </div>
 
+                    {/* Error Message */}
+                    {error && (
+                        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+                            ⚠️ {error}
+                        </div>
+                    )}
+
                     {/* Tombol Submit */}
                     <div className="w-full sm:max-w-sm sm:mx-auto">
                         <button
                             type="submit"
                             disabled={isUploading}
-                            className="w-full bg-[#f98125] text-white px-6 py-2 rounded-[10px] font-bold transition hover:bg-[#d96f1f] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full bg-[#f98125] text-white px-6 py-2 rounded-[10px] font-bold transition hover:bg-[#d96f1f] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            {isUploading ? "Mengirim..." : "Kirim Laporan"}
+                            {isUploading ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                    <span>Mengirim...</span>
+                                </>
+                            ) : (
+                                "Kirim Laporan"
+                            )}
                         </button>
                     </div>
                 </form>
