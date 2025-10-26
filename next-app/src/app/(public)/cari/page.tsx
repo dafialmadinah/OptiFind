@@ -21,15 +21,15 @@ interface FilterState {
 }
 
 const tipeTabs = [
-    { label: "Temuan", value: "Temuan" },
-    { label: "Hilang", value: "Hilang" },
+    { label: "Temuan", value: "temuan" },
+    { label: "Hilang", value: "hilang" },
 ];
 
 export default function CariPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const query = searchParams.get("q") ?? "";
-    const tipe = searchParams.get("tipe") ?? "Temuan";
+    const tipe = searchParams.get("tipe") ?? "temuan";
     const kategoriParam = searchParams.get("kategori");
 
     // ✅ ubah ke BarangWithRelations
@@ -169,7 +169,11 @@ export default function CariPage() {
     };
 
     const handleTabChange = (value: string) => {
-        router.push(`/cari?tipe=${value}&q=${query}`);
+        const params = new URLSearchParams();
+        params.set('tipe', value);
+        if (query) params.set('q', query);
+        if (kategoriParam) params.set('kategori', kategoriParam);
+        router.push(`/cari?${params.toString()}`);
     };
 
     return (
@@ -186,10 +190,21 @@ export default function CariPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     <div className="lg:col-span-1">
-                        <BarangFilter 
-                            onFilterChange={handleFilterChange}
-                            initialFilters={filters}
-                        />
+                        {loading ? (
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6 animate-pulse">
+                                <div className="h-6 w-32 bg-gray-200 rounded"></div>
+                                <div className="space-y-3">
+                                    {[1, 2, 3, 4].map((i) => (
+                                        <div key={i} className="h-8 w-full bg-gray-200 rounded"></div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <BarangFilter 
+                                onFilterChange={handleFilterChange}
+                                initialFilters={filters}
+                            />
+                        )}
                     </div>
 
                     <div className="lg:col-span-3 space-y-6">
@@ -214,11 +229,28 @@ export default function CariPage() {
                         </div>
 
                         {loading ? (
-                            <div className="text-center py-12">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                                <p className="mt-4 text-gray-600">
-                                    Memuat data...
-                                </p>
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                    <div className="flex border-b border-gray-200">
+                                        {[1, 2].map((i) => (
+                                            <div key={i} className="flex-1 px-6 py-4">
+                                                <div className="h-6 w-20 bg-gray-200 rounded animate-pulse mx-auto"></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                                        <div key={i} className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
+                                            <div className="aspect-square bg-gray-200"></div>
+                                            <div className="p-4 space-y-2">
+                                                <div className="h-5 w-3/4 bg-gray-200 rounded"></div>
+                                                <div className="h-4 w-1/2 bg-gray-200 rounded"></div>
+                                                <div className="h-4 w-1/3 bg-gray-200 rounded"></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ) : filteredBarangs.length === 0 ? (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">

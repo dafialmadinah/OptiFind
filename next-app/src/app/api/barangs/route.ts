@@ -4,20 +4,33 @@ import { barangSchema } from "@/lib/validation";
 import { getBarangById, searchBarangs } from "@/lib/barang-service";
 import { getSupabaseUser } from "@/lib/supabase-server";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q") ?? undefined;
   const tipe = searchParams.get("tipe") ?? undefined;
+  const myBarangs = searchParams.get("myBarangs") === "true"; // Filter user's own barangs
   const kategoriParams = searchParams.getAll("kategori");
 
   const kategori = kategoriParams
     .map((value) => Number(value))
     .filter((value) => !Number.isNaN(value));
 
+  let pelaporId: string | undefined = undefined;
+
+  // If myBarangs is requested, get user and filter by their ID
+  if (myBarangs) {
+    const user = await getSupabaseUser(request);
+    if (!user) {
+      return NextResponse.json({ message: "Unauthorised" }, { status: 401 });
+    }
+    pelaporId = user.id;
+  }
+
   const barangs = await searchBarangs({
     q: query,
     tipe,
     kategori,
+    pelaporId,
   });
 
   return NextResponse.json({ data: barangs });

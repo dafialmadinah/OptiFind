@@ -69,10 +69,44 @@ export default function BarangDetailPage({ params }: Props) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Memuat detail barang...</p>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4 max-w-4xl">
+          {/* Breadcrumb Skeleton */}
+          <div className="mb-6 flex items-center gap-2">
+            <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
+              {/* Image Skeleton */}
+              <div className="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
+
+              {/* Info Skeleton */}
+              <div className="space-y-4">
+                <div className="h-8 w-3/4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse"></div>
+                
+                <div className="space-y-3 pt-4">
+                  <div className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-2/3 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+
+                <div className="space-y-2 pt-4">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex gap-2">
+                      <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="h-12 w-full bg-gray-200 rounded-lg animate-pulse mt-6"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
