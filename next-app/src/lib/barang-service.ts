@@ -6,7 +6,7 @@ export type Reference = {
 };
 
 export type PelaporSummary = {
-  id: number;
+  id: string; // UUID
   name: string | null;
   username: string | null;
   noTelepon: string | null;
@@ -15,9 +15,9 @@ export type PelaporSummary = {
 export type BarangWithRelations = {
   id: number;
   nama: string;
-  tipeId: number;
+  tipe: string; // 'hilang' or 'temuan' (TEXT field)
   kategoriId: number;
-  pelaporId: number | null;
+  pelaporId: string | null; // UUID string
   statusId: number;
   waktu: string;
   lokasi: string | null;
@@ -26,7 +26,6 @@ export type BarangWithRelations = {
   foto: string | null;
   createdAt: string;
   updatedAt: string;
-  tipe: Reference;
   kategori: Reference;
   status: Reference;
   pelapor: PelaporSummary;
@@ -37,9 +36,9 @@ export type Kategori = Reference;
 type SupabaseBarangRow = {
   id: number;
   nama: string;
-  tipe_id: number;
+  tipe: string; // TEXT field
   kategori_id: number;
-  pelapor_id: number | null;
+  pelapor_id: string | null; // UUID
   status_id: number;
   waktu: string | null;
   lokasi: string | null;
@@ -48,12 +47,11 @@ type SupabaseBarangRow = {
   foto: string | null;
   created_at: string | null;
   updated_at: string | null;
-  tipe: Reference[] | null;
   kategori: Reference[] | null;
   status: Reference[] | null;
   pelapor:
     | {
-        id: number;
+        id: string; // UUID
         name: string | null;
         username: string | null;
         no_telepon: string | null;
@@ -64,7 +62,7 @@ type SupabaseBarangRow = {
 const barangSelect = `
   id,
   nama,
-  tipe_id,
+  tipe,
   kategori_id,
   pelapor_id,
   status_id,
@@ -75,7 +73,6 @@ const barangSelect = `
   foto,
   created_at,
   updated_at,
-  tipe:tipe_id(id, nama),
   kategori:kategori_id(id, nama),
   status:status_id(id, nama),
   pelapor:pelapor_id(id, name, username, no_telepon)
@@ -83,7 +80,6 @@ const barangSelect = `
 
 // Map data dari Supabase ke bentuk BarangWithRelations
 function mapBarang(row: SupabaseBarangRow): BarangWithRelations {
-  const tipeRel = row.tipe?.[0] ?? { id: row.tipe_id, nama: "-" };
   const kategoriRel = row.kategori?.[0] ?? { id: row.kategori_id, nama: "-" };
   const statusRel = row.status?.[0] ?? { id: row.status_id, nama: "-" };
   const pelaporRel = row.pelapor?.[0] ?? null;
@@ -91,7 +87,7 @@ function mapBarang(row: SupabaseBarangRow): BarangWithRelations {
   return {
     id: row.id,
     nama: row.nama,
-    tipeId: row.tipe_id,
+    tipe: row.tipe, // 'hilang' or 'temuan'
     kategoriId: row.kategori_id,
     pelaporId: row.pelapor_id,
     statusId: row.status_id,
@@ -102,7 +98,6 @@ function mapBarang(row: SupabaseBarangRow): BarangWithRelations {
     foto: row.foto,
     createdAt: row.created_at ?? "",
     updatedAt: row.updated_at ?? "",
-    tipe: tipeRel,
     kategori: kategoriRel,
     status: statusRel,
     pelapor: pelaporRel
@@ -157,13 +152,13 @@ export async function getBarangOverview() {
 
     const barangTemuan = sortByWaktuDesc(
       barangs.filter(
-        (barang) => barang.tipe.nama === "Temuan" && barang.status.nama === "Belum Dikembalikan"
+        (barang) => barang.tipe === "temuan" && barang.status.nama === "Belum Dikembalikan"
       )
     ).slice(0, 6);
 
     const barangHilang = sortByWaktuDesc(
       barangs.filter(
-        (barang) => barang.tipe.nama === "Hilang" && barang.status.nama === "Belum Ditemukan"
+        (barang) => barang.tipe === "hilang" && barang.status.nama === "Belum Ditemukan"
       )
     ).slice(0, 6);
 
@@ -231,11 +226,12 @@ export async function searchBarangs(params: SearchParams): Promise<BarangWithRel
     }
 
     if (tipe) {
-      items = items.filter((barang) => barang.tipe.nama === tipe);
+      const tipeNormalized = tipe.toLowerCase(); // normalize to 'hilang' or 'temuan'
+      items = items.filter((barang) => barang.tipe === tipeNormalized);
 
-      if (tipe === "Temuan") {
+      if (tipeNormalized === "temuan") {
         items = items.filter((barang) => barang.status.nama === "Belum Dikembalikan");
-      } else if (tipe === "Hilang") {
+      } else if (tipeNormalized === "hilang") {
         items = items.filter((barang) => barang.status.nama === "Belum Ditemukan");
       }
     }

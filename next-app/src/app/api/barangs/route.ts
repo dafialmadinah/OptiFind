@@ -40,8 +40,15 @@ export async function POST(request: NextRequest) {
   try {
     const json = await request.json();
 
-    // Validate tipe (hilang or temuan)
-    const tipe = json.tipe === 'hilang' ? 'hilang' : 'temuan';
+    // Validate tipe (must be 'hilang' or 'temuan')
+    const rawTipe = (json.tipe || "").toString().toLowerCase();
+    if (!["hilang", "temuan"].includes(rawTipe)) {
+      return NextResponse.json(
+        { message: "Tipe harus 'hilang' atau 'temuan'" },
+        { status: 422 }
+      );
+    }
+    const tipe = rawTipe; // 'hilang' or 'temuan' (lowercase to match DB constraint)
 
     // Get or create kategori_id
     let kategoriId: number | null = null;
@@ -51,9 +58,9 @@ export async function POST(request: NextRequest) {
     } else if (json.kategori) {
       // Check if kategori exists by name
       const { data: existingKategori } = await supabase
-        .from('kategoris')
-        .select('id')
-        .ilike('nama', json.kategori)
+        .from("kategoris")
+        .select("id")
+        .ilike("nama", json.kategori)
         .maybeSingle();
 
       if (existingKategori) {
@@ -61,15 +68,15 @@ export async function POST(request: NextRequest) {
       } else {
         // Create new kategori
         const { data: newKategori, error: kategoriError } = await supabase
-          .from('kategoris')
+          .from("kategoris")
           .insert({ nama: json.kategori })
-          .select('id')
+          .select("id")
           .single();
 
         if (kategoriError || !newKategori) {
-          console.error('Kategori insert error:', kategoriError);
+          console.error("Kategori insert error:", kategoriError);
           return NextResponse.json(
-            { message: 'Gagal membuat kategori baru' },
+            { message: "Gagal membuat kategori baru" },
             { status: 500 }
           );
         }
@@ -80,27 +87,33 @@ export async function POST(request: NextRequest) {
 
     // Get or create status
     let statusId: number | null = null;
-    const statusNama = json.status || 'Belum Dikembalikan';
-    
+    const statusNama = json.status || "Belum Dikembalikan";
+
     const { data: existingStatus } = await supabase
-      .from('statuses')
-      .select('id')
-      .ilike('nama', statusNama)
+      .from("statuses")
+      .select("id")
+      .ilike("nama", statusNama)
       .maybeSingle();
 
     if (existingStatus) {
       statusId = existingStatus.id;
     } else {
       // Create new status
-      const { data: newStatus } = await supabase
-        .from('statuses')
+      const { data: newStatus, error: statusError } = await supabase
+        .from("statuses")
         .insert({ nama: statusNama })
-        .select('id')
+        .select("id")
         .single();
-      
-      if (newStatus) {
-        statusId = newStatus.id;
+
+      if (statusError || !newStatus) {
+        console.error("Status insert error:", statusError);
+        return NextResponse.json(
+          { message: "Gagal membuat status baru" },
+          { status: 500 }
+        );
       }
+
+      statusId = newStatus.id;
     }
 
     // Get pelapor_id from authenticated user (UUID dari Supabase Auth)
@@ -109,17 +122,17 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!json.nama) {
       return NextResponse.json(
-        { message: 'Nama barang diperlukan' },
+        { message: "Nama barang diperlukan" },
         { status: 422 }
       );
     }
 
-    // Insert barang
+    // Insert barang with tipe as TEXT (not tipe_id)
     const { data: inserted, error: insertError } = await supabase
       .from("barangs")
       .insert({
         nama: json.nama,
-        tipe: tipe,
+        tipe: tipe, // TEXT field: 'hilang' or 'temuan'
         kategori_id: kategoriId,
         pelapor_id: pelaporId,
         waktu: json.waktu ? new Date(json.waktu).toISOString() : null,
