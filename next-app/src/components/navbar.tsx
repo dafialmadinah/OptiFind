@@ -8,8 +8,14 @@ import { signOut } from "next-auth/react";
 
 const navLinks = [
   { label: "Beranda", href: "/dashboard" },
-  { label: "Lapor Hilang", href: "/barangs/lapor-hilang" },
-  { label: "Lapor Temuan", href: "/barangs/lapor-temuan" },
+  { 
+    label: "Lapor Barang", 
+    href: "#",
+    dropdown: [
+      { label: "Barang Hilang", href: "/barangs/lapor-hilang" },
+      { label: "Barang Temuan", href: "/barangs/lapor-temuan" },
+    ]
+  },
   { label: "Riwayat", href: "/riwayat-laporan" },
 ];
 
@@ -25,6 +31,8 @@ export function Navbar({ user }: NavbarProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
+  const [closeTimeout, setCloseTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -33,11 +41,32 @@ export function Navbar({ user }: NavbarProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const handleMouseEnter = (label: string) => {
+    if (closeTimeout) {
+      clearTimeout(closeTimeout);
+      setCloseTimeout(null);
+    }
+    setDropdownOpen(label);
+  };
+
+  const handleMouseLeave = () => {
+    const timeout = setTimeout(() => {
+      setDropdownOpen(null);
+    }, 200);
+    setCloseTimeout(timeout);
+  };
+
   const isActive = (href: string) => {
     if (href === "/dashboard") {
       return pathname === "/dashboard";
     }
+    if (href === "#") return false;
     return pathname.startsWith(href);
+  };
+
+  const isDropdownActive = (dropdown?: { label: string; href: string }[]) => {
+    if (!dropdown) return false;
+    return dropdown.some(item => pathname.startsWith(item.href));
   };
 
   return (
@@ -56,15 +85,62 @@ export function Navbar({ user }: NavbarProps) {
 
         <nav className="items-center hidden gap-6 text-sm font-semibold md:flex">
           {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`transition-colors ${
-                isActive(link.href) ? "text-orange-400" : "text-white/90 hover:text-orange-400"
-              }`}
-            >
-              {link.label}
-            </Link>
+            link.dropdown ? (
+              <div 
+                key={link.label}
+                className="relative"
+                onMouseEnter={() => handleMouseEnter(link.label)}
+                onMouseLeave={handleMouseLeave}
+              >
+                <button
+                  className={`transition-colors flex items-center gap-1 ${
+                    isDropdownActive(link.dropdown) ? "text-orange-400" : "text-white/90 hover:text-orange-400"
+                  }`}
+                >
+                  {link.label}
+                  <svg 
+                    className={`w-4 h-4 transition-transform ${dropdownOpen === link.label ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {dropdownOpen === link.label && (
+                  <div 
+                    className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50"
+                    onMouseEnter={() => handleMouseEnter(link.label)}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    {link.dropdown.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`block px-4 py-2 text-sm transition-colors ${
+                          isActive(item.href) 
+                            ? "bg-orange-50 text-orange-600 font-semibold" 
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`transition-colors ${
+                  isActive(link.href) ? "text-orange-400" : "text-white/90 hover:text-orange-400"
+                }`}
+              >
+                {link.label}
+              </Link>
+            )
           ))}
         </nav>
 
@@ -118,18 +194,38 @@ export function Navbar({ user }: NavbarProps) {
       {menuOpen && (
         <div className="pointer-events-auto mt-3 w-full max-w-4xl rounded-2xl bg-[#8b8891]/95 p-4 text-white shadow-lg md:hidden">
           {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMenuOpen(false)}
-              className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                isActive(link.href) ? "bg-white/15 text-orange-400" : "text-white hover:text-orange-400"
-              }`}
-            >
-              {link.label}
-            </Link>
+            link.dropdown ? (
+              <div key={link.label}>
+                <div className="px-3 py-2 text-sm font-semibold text-white/70">
+                  {link.label}
+                </div>
+                {link.dropdown.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMenuOpen(false)}
+                    className={`block rounded-lg px-6 py-2 text-sm font-medium transition ${
+                      isActive(item.href) ? "bg-white/15 text-orange-400" : "text-white hover:text-orange-400"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                  isActive(link.href) ? "bg-white/15 text-orange-400" : "text-white hover:text-orange-400"
+                }`}
+              >
+                {link.label}
+              </Link>
+            )
           ))}
-          <div className="h-px bg-white/20" />
+          <div className="h-px bg-white/20 my-2" />
           {user ? (
             <button
               type="button"

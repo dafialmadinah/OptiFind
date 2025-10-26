@@ -1,26 +1,38 @@
+'use client';
+
 import Image from "next/image";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
-import { notFound } from "next/navigation";
-import { authOptions } from "@/lib/auth-options";
-import { getBarangById } from "@/lib/barang-service";
-import { dayjs } from "@/lib/dayjs";
-import { StatusBadge } from "@/components/status-badge";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
+import 'dayjs/locale/id';
+
+dayjs.extend(relativeTime);
+dayjs.extend(timezone);
+dayjs.extend(utc);
+dayjs.locale('id');
 
 type Props = {
   params: { id: string };
 };
 
-const iconMap = {
-  status: "/assets/status.svg",
-  kategori: "/assets/kategori.svg",
-  tipe: "/assets/riwayat.svg",
-  tanggal: "/assets/tanggal.svg",
-  lokasi: "/assets/lokasi_abu.svg",
-  deskripsi: "/assets/deskripsi.svg",
-  namaPelapor: "/assets/nama_pelapor.svg",
-  kontak: "/assets/kontak_pelapor.svg",
-} as const;
+interface Barang {
+  id: number;
+  nama: string;
+  foto: string | null;
+  kategori: { id: number; nama: string };
+  status: { id: number; nama: string };
+  tipe: { id: number; nama: string };
+  waktu: string | null;
+  lokasi: string | null;
+  deskripsi: string | null;
+  kontak: string | null;
+  pelapor: { id: number; name: string } | null;
+  createdAt: string;
+}
 
 function resolveImageSrc(foto: string | null) {
   if (!foto) return "/assets/no_image.png";
@@ -29,103 +41,230 @@ function resolveImageSrc(foto: string | null) {
   return "/assets/no_image.png";
 }
 
-export default async function BarangDetailPage({ params }: Props) {
-  const barangId = Number(params.id);
-  if (Number.isNaN(barangId)) {
-    notFound();
+export default function BarangDetailPage({ params }: Props) {
+  const router = useRouter();
+  const [barang, setBarang] = useState<Barang | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBarang();
+  }, [params.id]);
+
+  const fetchBarang = async () => {
+    try {
+      const response = await fetch(`/api/barangs/${params.id}`);
+      if (!response.ok) {
+        router.push('/barangs');
+        return;
+      }
+      const data = await response.json();
+      setBarang(data.data);
+    } catch (error) {
+      console.error('Error fetching barang:', error);
+      router.push('/barangs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Memuat detail barang...</p>
+        </div>
+      </div>
+    );
   }
 
-  const [barang, session] = await Promise.all([
-    getBarangById(barangId),
-    getServerSession(authOptions),
-  ]);
-
   if (!barang) {
-    notFound();
+    return null;
   }
 
   const imageSrc = resolveImageSrc(barang.foto);
-  const waktuLabel = barang.waktu ? dayjs(barang.waktu).tz("Asia/Jakarta").format("DD MMMM YYYY, HH:mm") : "-";
-  const isOwner = session?.user?.id && barang.pelapor ? session.user.id === barang.pelapor.id.toString() : false;
+  const waktuDitemukan = barang.waktu 
+    ? dayjs(barang.waktu).format("dddd, DD-MM-YYYY")
+    : "-";
+  const waktuDilaporkan = dayjs(barang.createdAt).format("HH.mm");
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'belum dikembalikan':
+      case 'hilang':
+        return 'bg-red-100 text-red-700';
+      case 'sudah dikembalikan':
+      case 'selesai':
+        return 'bg-green-100 text-green-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
 
   return (
-    <div className="bg-[#f0f9ff] pt-10 pb-12 sm:pt-24">
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-10 rounded-none bg-white shadow-md sm:rounded-[20px] sm:px-12 sm:py-10 md:flex-row md:px-[50px]">
-        <div className="flex w-full flex-col gap-6 px-4 pt-16 sm:w-1/2 sm:pt-0">
-          <div className="relative aspect-square w-full overflow-hidden rounded-none sm:rounded-[20px]">
-            <Image
-              src={imageSrc}
-              alt={barang.nama}
-              fill
-              className="object-cover object-center"
-              sizes="(max-width: 768px) 90vw, 500px"
-            />
-          </div>
-
-          {barang.kontak && !isOwner && (
-            <Link
-              href={`https://wa.me/${barang.kontak.replace(/[^0-9]/g, "")}`}
-              target="_blank"
-              className="hidden w-full items-center justify-center rounded-[10px] bg-[#f98125] py-3 text-sm font-semibold text-white transition hover:bg-[#e07018] lg:flex"
-            >
-              Hubungi Pelapor
-            </Link>
-          )}
-        </div>
-
-        <div className="flex-1 space-y-6 px-4 pb-10 sm:px-0">
-          <header className="space-y-3">
-            <h1 className="text-[24px] font-bold text-[#193a6f] sm:text-[28px]">{barang.nama}</h1>
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <StatusBadge label={barang.status.nama} />
-              <span className="rounded-full bg-[#193a6f]/10 px-3 py-1 text-xs font-semibold text-[#193a6f]">
-                {barang.tipe.nama}
-              </span>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4 max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 bg-white rounded-2xl shadow-lg overflow-hidden">
+          {/* Left Side - Image */}
+          <div className="relative">
+            <div className="aspect-square lg:aspect-auto lg:h-full relative bg-gray-100">
+              <Image
+                src={imageSrc}
+                alt={barang.nama}
+                fill
+                className="object-cover"
+                priority
+              />
             </div>
-          </header>
-
-          <div className="space-y-5 rounded-[20px] border border-gray-200 p-5">
-            <h2 className="text-base font-semibold text-[#193a6f]">Ringkasan Barang</h2>
-            <DetailRow icon={iconMap.status} label="Status" value={barang.status.nama} />
-            <DetailRow icon={iconMap.kategori} label="Kategori" value={barang.kategori.nama} />
-            <DetailRow icon={iconMap.tipe} label="Jenis Laporan" value={barang.tipe.nama} />
-            <DetailRow icon={iconMap.tanggal} label="Waktu Kejadian" value={waktuLabel} />
-            <DetailRow icon={iconMap.lokasi} label="Lokasi" value={barang.lokasi ?? "-"} />
+            
+            {/* Contact Button - Desktop */}
+            {barang.kontak && (
+              <div className="hidden lg:block absolute bottom-0 left-0 right-0 p-6">
+                <Link
+                  href={`https://wa.me/${barang.kontak.replace(/[^0-9]/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 rounded-xl text-center transition-colors shadow-lg"
+                >
+                  Hubungi Pelapor
+                </Link>
+              </div>
+            )}
           </div>
 
-          <div className="space-y-5 rounded-[20px] border border-gray-200 p-5">
-            <h2 className="text-base font-semibold text-[#193a6f]">Deskripsi</h2>
-            <DetailRow icon={iconMap.deskripsi} label="Detail Barang" value={barang.deskripsi ?? "-"} />
-          </div>
+          {/* Right Side - Details */}
+          <div className="p-6 lg:p-8 space-y-6 lg:overflow-y-auto lg:max-h-[calc(100vh-4rem)]">
+            {/* Title */}
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {barang.nama}
+              </h1>
+              <p className="text-sm text-gray-500">{barang.tipe.nama}</p>
+            </div>
 
-          <div className="space-y-5 rounded-[20px] border border-gray-200 p-5">
-            <h2 className="text-base font-semibold text-[#193a6f]">Kontak Pelapor</h2>
-            <DetailRow icon={iconMap.namaPelapor} label="Nama" value={barang.pelapor?.name ?? "-"} />
-            <DetailRow icon={iconMap.kontak} label="Nomor Kontak" value={barang.kontak ?? "-"} />
-          </div>
+            {/* Kategori */}
+            <div className="flex items-center gap-3">
+              <Image 
+                src="/assets/kategori.svg" 
+                alt="Kategori" 
+                width={24} 
+                height={24}
+                className="text-gray-600"
+              />
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase">Kategori</p>
+                <p className="text-base text-gray-800">{barang.kategori.nama}</p>
+              </div>
+            </div>
 
-          {barang.kontak && !isOwner && (
-            <Link
-              href={`https://wa.me/${barang.kontak.replace(/[^0-9]/g, "")}`}
-              target="_blank"
-              className="flex w-full items-center justify-center rounded-[10px] bg-[#f98125] py-3 text-sm font-semibold text-white transition hover:bg-[#e07018] lg:hidden"
-            >
-              Hubungi Pelapor
-            </Link>
-          )}
+            {/* Status */}
+            <div className="flex items-center gap-3">
+              <Image 
+                src="/assets/status.svg" 
+                alt="Status" 
+                width={24} 
+                height={24}
+              />
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase">Status</p>
+                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(barang.status.nama)}`}>
+                  {barang.status.nama}
+                </span>
+              </div>
+            </div>
+
+            {/* Waktu Ditemukan */}
+            <div className="flex items-center gap-3">
+              <Image 
+                src="/assets/tanggal.svg" 
+                alt="Waktu" 
+                width={24} 
+                height={24}
+              />
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase">Waktu Ditemukan</p>
+                <p className="text-base text-gray-800">{waktuDitemukan}</p>
+                <p className="text-sm text-gray-600">Dilaporkan pada {waktuDilaporkan}</p>
+              </div>
+            </div>
+
+            {/* Lokasi Ditemukan */}
+            <div className="flex items-center gap-3">
+              <Image 
+                src="/assets/lokasi_abu.svg" 
+                alt="Lokasi" 
+                width={24} 
+                height={24}
+              />
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase">Lokasi Ditemukan</p>
+                <p className="text-base text-gray-800">{barang.lokasi || "-"}</p>
+              </div>
+            </div>
+
+            {/* Deskripsi */}
+            <div className="flex items-start gap-3">
+              <Image 
+                src="/assets/deskripsi.svg" 
+                alt="Deskripsi" 
+                width={24} 
+                height={24}
+                className="mt-1"
+              />
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Deskripsi</p>
+                <p className="text-base text-gray-800 leading-relaxed">
+                  {barang.deskripsi || "Tidak ada deskripsi."}
+                </p>
+              </div>
+            </div>
+
+            {/* Kontak Pelapor */}
+            <div className="border-t pt-6 space-y-4">
+              <h2 className="text-lg font-semibold text-gray-900">Kontak Pelapor</h2>
+              
+              <div className="flex items-center gap-3">
+                <Image 
+                  src="/assets/nama_pelapor.svg" 
+                  alt="Nama" 
+                  width={24} 
+                  height={24}
+                />
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Nama Pelapor</p>
+                  <p className="text-base text-gray-800">{barang.pelapor?.name || "Anonim"}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Image 
+                  src="/assets/kontak_pelapor.svg" 
+                  alt="Kontak" 
+                  width={24} 
+                  height={24}
+                />
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Nomor Telepon</p>
+                  <p className="text-base text-gray-800">{barang.kontak || "-"}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Button - Mobile */}
+            {barang.kontak && (
+              <div className="lg:hidden pt-4">
+                <Link
+                  href={`https://wa.me/${barang.kontak.replace(/[^0-9]/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 rounded-xl text-center transition-colors"
+                >
+                  Hubungi Pelapor
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function DetailRow({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return (
-    <div className="flex items-start gap-3 text-sm text-[#5d5d5d]">
-      <Image src={icon} alt={label} width={24} height={24} className="mt-1 h-6 w-6" />
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#193a6f]">{label}</p>
-        <p className="text-sm text-slate-700">{value}</p>
       </div>
     </div>
   );

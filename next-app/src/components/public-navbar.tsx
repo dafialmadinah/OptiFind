@@ -16,12 +16,29 @@ type PublicNavbarProps = {
 export function PublicNavbar({ user }: PublicNavbarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [closeTimeout, setCloseTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       window.location.href = `/barangs-list?q=${encodeURIComponent(searchQuery)}`;
     }
+  };
+
+  const handleMouseEnter = () => {
+    if (closeTimeout) {
+      clearTimeout(closeTimeout);
+      setCloseTimeout(null);
+    }
+    setDropdownOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    const timeout = setTimeout(() => {
+      setDropdownOpen(false);
+    }, 200);
+    setCloseTimeout(timeout);
   };
 
   return (
@@ -70,12 +87,46 @@ export function PublicNavbar({ user }: PublicNavbarProps) {
 
           {/* Navigation Menu - Right */}
           <nav className="hidden lg:flex items-center gap-6 flex-shrink-0">
-            <Link
-              href="/barangs/lapor-hilang"
-              className="text-white hover:text-blue-200 transition-colors font-medium whitespace-nowrap"
+            <div 
+              className="relative"
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             >
-              Lapor Barang
-            </Link>
+              <button
+                className="text-white hover:text-blue-200 transition-colors font-medium whitespace-nowrap flex items-center gap-1"
+              >
+                Lapor Barang
+                <svg 
+                  className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {dropdownOpen && (
+                <div 
+                  className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50"
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                >
+                  <Link
+                    href="/barangs/lapor-hilang"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    Barang Hilang
+                  </Link>
+                  <Link
+                    href="/barangs/lapor-temuan"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    Barang Temuan
+                  </Link>
+                </div>
+              )}
+            </div>
             <Link
               href="/riwayat-laporan"
               className="text-white hover:text-blue-200 transition-colors font-medium whitespace-nowrap"
@@ -130,13 +181,25 @@ export function PublicNavbar({ user }: PublicNavbarProps) {
         {menuOpen && (
           <div className="lg:hidden mt-4 pb-4 border-t border-blue-700 pt-4">
             <nav className="flex flex-col gap-3">
-              <Link
-                href="/barangs/lapor-hilang"
-                onClick={() => setMenuOpen(false)}
-                className="text-white hover:text-blue-200 transition-colors font-medium py-2"
-              >
-                Lapor Barang
-              </Link>
+              <div>
+                <div className="text-white/70 font-medium py-2 text-sm">
+                  Lapor Barang
+                </div>
+                <Link
+                  href="/barangs/lapor-hilang"
+                  onClick={() => setMenuOpen(false)}
+                  className="text-white hover:text-blue-200 transition-colors font-medium py-2 pl-4 block"
+                >
+                  Barang Hilang
+                </Link>
+                <Link
+                  href="/barangs/lapor-temuan"
+                  onClick={() => setMenuOpen(false)}
+                  className="text-white hover:text-blue-200 transition-colors font-medium py-2 pl-4 block"
+                >
+                  Barang Temuan
+                </Link>
+              </div>
               <Link
                 href="/riwayat-laporan"
                 onClick={() => setMenuOpen(false)}
