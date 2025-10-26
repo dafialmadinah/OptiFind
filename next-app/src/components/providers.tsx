@@ -1,12 +1,12 @@
 'use client';
 
-import { SessionProvider } from "next-auth/react";
+import { AuthProvider } from "@/lib/auth-context";
 import { GsapProvider } from "./gsap-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
+    <AuthProvider>
       <GsapProvider>{children}</GsapProvider>
-    </SessionProvider>
+    </AuthProvider>
   );
 }

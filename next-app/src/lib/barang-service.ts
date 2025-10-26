@@ -19,13 +19,13 @@ export type BarangWithRelations = {
   kategoriId: number;
   pelaporId: number | null;
   statusId: number;
-  waktu: string | null;
+  waktu: string;
   lokasi: string | null;
   kontak: string | null;
   deskripsi: string | null;
   foto: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
   tipe: Reference;
   kategori: Reference;
   status: Reference;
@@ -48,7 +48,6 @@ type SupabaseBarangRow = {
   foto: string | null;
   created_at: string | null;
   updated_at: string | null;
-  // Supabase returns related rows as arrays even for single FK relationships
   tipe: Reference[] | null;
   kategori: Reference[] | null;
   status: Reference[] | null;
@@ -82,16 +81,11 @@ const barangSelect = `
   pelapor:pelapor_id(id, name, username, no_telepon)
 `;
 
-const emptyOverview = {
-  barangs: [] as BarangWithRelations[],
-  kategoris: [] as Kategori[],
-  barangTemuan: [] as BarangWithRelations[],
-  barangHilang: [] as BarangWithRelations[],
-};
+// Map data dari Supabase ke bentuk BarangWithRelations
 function mapBarang(row: SupabaseBarangRow): BarangWithRelations {
-  const tipeRel = row.tipe?.[0] ?? null;
-  const kategoriRel = row.kategori?.[0] ?? null;
-  const statusRel = row.status?.[0] ?? null;
+  const tipeRel = row.tipe?.[0] ?? { id: row.tipe_id, nama: "-" };
+  const kategoriRel = row.kategori?.[0] ?? { id: row.kategori_id, nama: "-" };
+  const statusRel = row.status?.[0] ?? { id: row.status_id, nama: "-" };
   const pelaporRel = row.pelapor?.[0] ?? null;
 
   return {
@@ -101,16 +95,16 @@ function mapBarang(row: SupabaseBarangRow): BarangWithRelations {
     kategoriId: row.kategori_id,
     pelaporId: row.pelapor_id,
     statusId: row.status_id,
-    waktu: row.waktu,
+    waktu: row.waktu ?? "",
     lokasi: row.lokasi,
     kontak: row.kontak,
     deskripsi: row.deskripsi,
     foto: row.foto,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    tipe: tipeRel ?? { id: row.tipe_id, nama: "-" },
-    kategori: kategoriRel ?? { id: row.kategori_id, nama: "-" },
-    status: statusRel ?? { id: row.status_id, nama: "-" },
+    createdAt: row.created_at ?? "",
+    updatedAt: row.updated_at ?? "",
+    tipe: tipeRel,
+    kategori: kategoriRel,
+    status: statusRel,
     pelapor: pelaporRel
       ? {
           id: pelaporRel.id,
@@ -135,7 +129,14 @@ function sortByWaktuDesc(items: BarangWithRelations[]) {
   });
 }
 
-// 🔹 Overview barang dan kategori
+const emptyOverview = {
+  barangs: [] as BarangWithRelations[],
+  kategoris: [] as Kategori[],
+  barangTemuan: [] as BarangWithRelations[],
+  barangHilang: [] as BarangWithRelations[],
+};
+
+// Ambil overview barang dan kategori
 export async function getBarangOverview() {
   if (!supabase) return emptyOverview;
 
@@ -173,7 +174,7 @@ export async function getBarangOverview() {
   }
 }
 
-// 🔹 Get barang by ID
+// Ambil barang berdasarkan ID
 export async function getBarangById(id: number): Promise<BarangWithRelations | null> {
   if (!supabase) return null;
 
@@ -194,23 +195,21 @@ export async function getBarangById(id: number): Promise<BarangWithRelations | n
   }
 }
 
-// 🔹 Search barangs
+// Parameter pencarian
 export type SearchParams = {
   q?: string;
   tipe?: string;
   kategori?: number[];
 };
 
+// Fungsi pencarian barang
 export async function searchBarangs(params: SearchParams): Promise<BarangWithRelations[]> {
   if (!supabase) return [];
 
   const { q, tipe, kategori = [] } = params;
 
   try {
-    let query = supabase
-      .from("barangs")
-      .select(barangSelect)
-      .order("waktu", { ascending: false });
+    let query = supabase.from("barangs").select(barangSelect).order("waktu", { ascending: false });
 
     if (kategori.length > 0) {
       query = query.in("kategori_id", kategori);
@@ -248,7 +247,7 @@ export async function searchBarangs(params: SearchParams): Promise<BarangWithRel
   }
 }
 
-// 🔹 Get all kategoris
+// Ambil semua kategori
 export async function getAllKategoris(): Promise<Kategori[]> {
   if (!supabase) return [];
 

@@ -1,187 +1,231 @@
-import Image from "next/image";
-import Link from "next/link";
-import { BarangCard } from "@/components/barang/barang-card";
-import { getAllKategoris, searchBarangs, type Kategori } from "@/lib/barang-service";
+"use client";
 
-type Props = {
-  searchParams: {
-    q?: string;
-    tipe?: string;
-    kategori?: string | string[];
-  };
-};
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Image from "next/image";
+import { BarangCard } from "@/components/barang/barang-card";
+import { BarangFilter } from "@/components/barang-filter";
+import {
+    searchBarangs,
+    getAllKategoris,
+    type Kategori,
+    type BarangWithRelations,
+} from "@/lib/barang-service";
+
+// Filter state
+interface FilterState {
+    kategori: number[];
+    waktu: string;
+    lokasi: string;
+    urutkan: string;
+}
 
 const tipeTabs = [
-  { label: "Temuan", value: "Temuan" },
-  { label: "Hilang", value: "Hilang" },
+    { label: "Temuan", value: "Temuan" },
+    { label: "Hilang", value: "Hilang" },
 ];
 
-export default async function CariPage({ searchParams }: Props) {
-  const query = searchParams.q ?? "";
-  const tipe = searchParams.tipe ?? "Temuan";
-  const kategoriParam = searchParams.kategori;
-  const kategoriFilter = Array.isArray(kategoriParam)
-    ? kategoriParam.map((k) => Number(k)).filter((v) => !Number.isNaN(v))
-    : kategoriParam
-      ? [Number(kategoriParam)].filter((v) => !Number.isNaN(v))
-      : [];
+export default function CariPage() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const query = searchParams.get("q") ?? "";
+    const tipe = searchParams.get("tipe") ?? "Temuan";
 
-  const [barangs, kategoris] = await Promise.all([
-    searchBarangs({ q: query, tipe, kategori: kategoriFilter }),
-    getAllKategoris(),
-  ]);
+    // ✅ ubah ke BarangWithRelations
+    const [barangs, setBarangs] = useState<BarangWithRelations[]>([]);
+    const [filteredBarangs, setFilteredBarangs] = useState<
+        BarangWithRelations[]
+    >([]);
+    const [filters, setFilters] = useState<FilterState>({
+        kategori: [],
+        waktu: "",
+        lokasi: "",
+        urutkan: "",
+    });
+    const [kategoris, setKategoris] = useState<Kategori[]>([]);
+    const [loading, setLoading] = useState(true);
 
-  return (
-    <div className="min-h-screen bg-[#f0f9ff]">
-      <div className="mx-auto max-w-[1512px] px-4 pt-24 pb-10 sm:px-6 md:px-12 lg:px-[100px]">
-        <div className="flex flex-col items-start gap-10 md:flex-row md:gap-[40px]">
-          <aside className="hidden w-full max-w-[240px] rounded-[10px] bg-white p-6 shadow md:block">
-            <FilterForm query={query} tipe={tipe} kategoriFilter={kategoriFilter} kategoris={kategoris} />
-          </aside>
+    useEffect(() => {
+        fetchData();
+    }, [query, tipe]);
 
-          <section className="w-full flex-1 space-y-6">
-            <div className="flex flex-wrap justify-center gap-6 md:justify-start">
-              {tipeTabs.map((tab) => {
-                const isActive = tipe === tab.value;
-                return (
-                  <Link
-                    key={tab.value}
-                    href={`/cari?${buildQueryString({ q: query, tipe: tab.value, kategori: kategoriFilter })}`}
-                    className={`flex min-w-[120px] flex-col items-center border-b-[3px] px-2 pb-1 text-[18px] font-semibold ${
-                      isActive ? "border-[#2c599d] text-[#2c599d]" : "border-transparent text-[#b0b0b0]"
-                    }`}
-                  >
-                    {tab.label}
-                  </Link>
-                );
-              })}
+    useEffect(() => {
+        applyFilters();
+    }, [barangs, filters]);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const kategoriParam = searchParams
+                .getAll("kategori")
+                .map((k) => Number(k));
+            const [barangRes, kategoriRes] = await Promise.all([
+                searchBarangs({ q: query, tipe, kategori: kategoriParam }),
+                getAllKategoris(),
+            ]);
+
+            // ✅ hasil dari backend sudah BarangWithRelations
+            setBarangs(barangRes || []);
+            setKategoris(kategoriRes || []);
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            setBarangs([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const applyFilters = () => {
+        let filtered = [...barangs];
+
+        // Filter kategori
+        if (filters.kategori.length > 0) {
+            filtered = filtered.filter((barang) =>
+                filters.kategori.includes(barang.kategori.id)
+            );
+        }
+
+        // Filter lokasi
+        if (filters.lokasi) {
+            filtered = filtered.filter((barang) =>
+                barang.lokasi
+                    ?.toLowerCase()
+                    .includes(filters.lokasi.toLowerCase())
+            );
+        }
+
+        // Filter waktu
+        if (filters.waktu) {
+            const now = new Date();
+            filtered = filtered.filter((barang) => {
+                const createdDate = new Date(barang.createdAt ?? "");
+                switch (filters.waktu) {
+                    case "Hari ini":
+                        return (
+                            createdDate.toDateString() === now.toDateString()
+                        );
+                    case "Minggu ini":
+                        const weekAgo = new Date(
+                            now.getTime() - 7 * 24 * 60 * 60 * 1000
+                        );
+                        return createdDate >= weekAgo;
+                    case "Bulan ini":
+                        return (
+                            createdDate.getMonth() === now.getMonth() &&
+                            createdDate.getFullYear() === now.getFullYear()
+                        );
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        // Urutkan
+        if (filters.urutkan) {
+            filtered = [...filtered].sort((a, b) => {
+                switch (filters.urutkan) {
+                    case "Terbaru":
+                        return (
+                            new Date(b.createdAt ?? "").getTime() -
+                            new Date(a.createdAt ?? "").getTime()
+                        );
+                    case "Terlama":
+                        return (
+                            new Date(a.createdAt ?? "").getTime() -
+                            new Date(b.createdAt ?? "").getTime()
+                        );
+                    case "Nama (A-Z)":
+                        return a.nama.localeCompare(b.nama);
+                    case "Nama (Z-A)":
+                        return b.nama.localeCompare(a.nama);
+                    default:
+                        return 0;
+                }
+            });
+        }
+
+        setFilteredBarangs(filtered);
+    };
+
+    const handleFilterChange = (newFilters: FilterState) => {
+        setFilters(newFilters);
+    };
+
+    const handleTabChange = (value: string) => {
+        router.push(`/cari?tipe=${value}&q=${query}`);
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 py-8">
+            <div className="container mx-auto px-4 max-w-7xl">
+                <div className="mb-8">
+                    <h1 className="text-xl font-semibold text-gray-900 mb-2">
+                        Hasil cari untuk:{" "}
+                        <span className="text-blue-800">
+                            {query ? `"${query}"` : "Semua barang"}
+                        </span>
+                    </h1>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <div className="lg:col-span-1">
+                        <BarangFilter onFilterChange={handleFilterChange} />
+                    </div>
+
+                    <div className="lg:col-span-3 space-y-6">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            <div className="flex border-b border-gray-200">
+                                {tipeTabs.map((tab) => (
+                                    <button
+                                        key={tab.value}
+                                        onClick={() =>
+                                            handleTabChange(tab.value)
+                                        }
+                                        className={`flex-1 px-6 py-4 text-center font-semibold transition-colors ${
+                                            tipe === tab.value
+                                                ? "text-blue-700 border-b-2 border-blue-700 bg-blue-50"
+                                                : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {loading ? (
+                            <div className="text-center py-12">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                                <p className="mt-4 text-gray-600">
+                                    Memuat data...
+                                </p>
+                            </div>
+                        ) : filteredBarangs.length === 0 ? (
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                                <Image
+                                    src="/assets/no_image.png"
+                                    alt="No data"
+                                    width={120}
+                                    height={120}
+                                    className="mx-auto opacity-50 mb-4"
+                                />
+                                <p className="text-gray-600">
+                                    Tidak ada hasil untuk pencarian ini.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredBarangs.map((barang) => (
+                                    <BarangCard
+                                        key={barang.id}
+                                        barang={barang}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
-
-            <div className="flex items-center justify-between">
-              {query ? (
-                <h1 className="text-[16px] font-semibold text-black md:text-[18px]">
-                  Hasil untuk: <span className="text-[#2c599d]">{query}</span>
-                </h1>
-              ) : (
-                <h1 className="text-[18px] font-semibold text-black md:text-[20px]">Semua laporan</h1>
-              )}
-
-              <div className="relative md:hidden">
-                <details className="group">
-              <summary className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-[#193a6f] shadow outline-none">
-                    <Image src="/assets/filter.svg" alt="Filter" width={20} height={20} />
-                  </summary>
-                  <div className="absolute right-0 z-50 mt-3 w-72 rounded-[12px] border bg-white p-5 shadow-lg">
-                    <FilterForm
-                      query={query}
-                      tipe={tipe}
-                      kategoriFilter={kategoriFilter}
-                      kategoris={kategoris}
-                      isCompact
-                    />
-                  </div>
-                </details>
-              </div>
-            </div>
-
-            {barangs.length === 0 ? (
-              <div className="rounded-[12px] border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-gray-500">
-                Tidak ada hasil untuk pencarian ini.
-              </div>
-            ) : (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
-                {barangs.map((barang) => (
-                  <BarangCard key={barang.id} barang={barang} />
-                ))}
-              </div>
-            )}
-          </section>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function FilterForm({
-  query,
-  tipe,
-  kategoriFilter,
-  kategoris,
-  isCompact = false,
-}: {
-  query: string;
-  tipe: string;
-  kategoriFilter: number[];
-  kategoris: Kategori[];
-  isCompact?: boolean;
-}) {
-  return (
-    <form action="/cari" className={`space-y-6 ${isCompact ? "" : "text-sm"}`}>
-      <input type="hidden" name="tipe" value={tipe} />
-      <div className="space-y-2">
-        <label htmlFor={isCompact ? "search-mobile" : "search"} className="text-sm font-semibold text-[#193a6f]">
-          Kata kunci
-        </label>
-        <input
-          id={isCompact ? "search-mobile" : "search"}
-          name="q"
-          defaultValue={query}
-          placeholder="Cari nama barang atau lokasi"
-          className="w-full rounded-[10px] border border-slate-200 px-3 py-2 text-sm text-[#193a6f] focus:border-[#193a6f] focus:outline-none focus:ring-2 focus:ring-[#193a6f]/20"
-          type="text"
-        />
-      </div>
-
-      <div>
-        <p className="text-sm font-semibold text-[#193a6f]">Kategori</p>
-        <div className="mt-3 space-y-2">
-          {kategoris.map((kategori) => (
-            <label key={kategori.id} className="flex items-center gap-2 text-sm text-[#193a6f]">
-              <input
-                type="checkbox"
-                name="kategori"
-                value={kategori.id}
-                defaultChecked={kategoriFilter.includes(kategori.id)}
-                className="h-4 w-4 rounded border-slate-300 text-[#193a6f] focus:ring-[#193a6f]"
-              />
-              {kategori.nama}
-            </label>
-          ))}
-          {kategoris.length === 0 && <p className="text-xs text-slate-400">Belum ada kategori yang tersedia.</p>}
-        </div>
-      </div>
-
-      <button
-        type="submit"
-        className="w-full rounded-[10px] bg-[#193a6f] py-2 text-sm font-semibold text-white transition hover:bg-[#142e56]"
-      >
-        Terapkan filter
-      </button>
-
-      <Link
-        href="/barangs"
-        className="flex w-full items-center justify-center rounded-[10px] border border-[#193a6f] py-2 text-sm font-semibold text-[#193a6f] transition hover:bg-[#193a6f] hover:text-white"
-      >
-        Reset pencarian
-      </Link>
-    </form>
-  );
-}
-
-function buildQueryString({
-  q,
-  tipe,
-  kategori,
-}: {
-  q?: string;
-  tipe?: string;
-  kategori?: number[];
-}) {
-  const params = new URLSearchParams();
-  if (q) params.set("q", q);
-  if (tipe) params.set("tipe", tipe);
-  kategori?.forEach((value) => {
-    params.append("kategori", value.toString());
-  });
-  return params.toString();
+    );
 }

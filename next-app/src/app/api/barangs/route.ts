@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { barangSchema } from "@/lib/validation";
 import { getBarangById, searchBarangs } from "@/lib/barang-service";
-import { getAuthUser } from "@/lib/auth-utils";
+import { getSupabaseUser } from "@/lib/supabase-server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -24,61 +24,120 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = getAuthUser(request);
+  const user = await getSupabaseUser(request);
 
   if (!user) {
     return NextResponse.json({ message: "Unauthorised" }, { status: 401 });
   }
 
   if (!supabase) {
-      return NextResponse.json(
-        { message: "Supabase belum dikonfigurasi di server." },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(
+      { message: "Supabase belum dikonfigurasi di server." },
+      { status: 500 }
+    );
+  }
 
   try {
     const json = await request.json();
-    const payload = {
-      ...json,
-      tipeId: Number(json.tipeId),
-      kategoriId: Number(json.kategoriId),
-      statusId: Number(json.statusId),
-    };
 
-    const parsed = barangSchema.safeParse(payload);
+    // Validate tipe (hilang or temuan)
+    const tipe = json.tipe === 'hilang' ? 'hilang' : 'temuan';
 
-    if (!parsed.success) {
+    // Get or create kategori_id
+    let kategoriId: number | null = null;
+
+    if (json.kategoriId) {
+      kategoriId = Number(json.kategoriId);
+    } else if (json.kategori) {
+      // Check if kategori exists by name
+      const { data: existingKategori } = await supabase
+        .from('kategoris')
+        .select('id')
+        .ilike('nama', json.kategori)
+        .maybeSingle();
+
+      if (existingKategori) {
+        kategoriId = existingKategori.id;
+      } else {
+        // Create new kategori
+        const { data: newKategori, error: kategoriError } = await supabase
+          .from('kategoris')
+          .insert({ nama: json.kategori })
+          .select('id')
+          .single();
+
+        if (kategoriError || !newKategori) {
+          console.error('Kategori insert error:', kategoriError);
+          return NextResponse.json(
+            { message: 'Gagal membuat kategori baru' },
+            { status: 500 }
+          );
+        }
+
+        kategoriId = newKategori.id;
+      }
+    }
+
+    // Get or create status
+    let statusId: number | null = null;
+    const statusNama = json.status || 'Belum Dikembalikan';
+    
+    const { data: existingStatus } = await supabase
+      .from('statuses')
+      .select('id')
+      .ilike('nama', statusNama)
+      .maybeSingle();
+
+    if (existingStatus) {
+      statusId = existingStatus.id;
+    } else {
+      // Create new status
+      const { data: newStatus } = await supabase
+        .from('statuses')
+        .insert({ nama: statusNama })
+        .select('id')
+        .single();
+      
+      if (newStatus) {
+        statusId = newStatus.id;
+      }
+    }
+
+    // Get pelapor_id from authenticated user (UUID dari Supabase Auth)
+    const pelaporId = user.id;
+
+    // Validate required fields
+    if (!json.nama) {
       return NextResponse.json(
-        { message: "Validasi gagal", errors: parsed.error.flatten() },
+        { message: 'Nama barang diperlukan' },
         { status: 422 }
       );
     }
 
-    const data = parsed.data;
-    const pelaporId = user.id;
-
-    // 🔹 Insert pakai supabase publik
+    // Insert barang
     const { data: inserted, error: insertError } = await supabase
       .from("barangs")
       .insert({
-        nama: data.nama,
-        tipe_id: data.tipeId,
-        kategori_id: data.kategoriId,
+        nama: json.nama,
+        tipe: tipe,
+        kategori_id: kategoriId,
         pelapor_id: pelaporId,
-        waktu: data.waktu ? new Date(data.waktu).toISOString() : null,
-        lokasi: data.lokasi ?? null,
-        kontak: data.kontak ?? null,
-        deskripsi: data.deskripsi ?? null,
-        foto: data.foto ?? null,
-        status_id: data.statusId,
+        waktu: json.waktu ? new Date(json.waktu).toISOString() : null,
+        lokasi: json.lokasi ?? null,
+        kontak: json.kontak ?? null,
+        deskripsi: json.deskripsi ?? null,
+        foto: json.foto ?? null,
+        status_id: statusId,
       })
       .select("id")
       .single();
 
     if (insertError || !inserted) {
       console.error("Insert error:", insertError);
-      throw new Error("Gagal menyimpan data barang.");
+      return NextResponse.json(
+        { message: "Gagal menyimpan data barang: " + (insertError?.message || "Unknown error") },
+        { status: 500 }
+      );
     }
 
     const barang = await getBarangById(inserted.id);
