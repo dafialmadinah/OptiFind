@@ -27,30 +27,10 @@ export function GsapProvider({ children }: Props) {
     gsap.ticker.add(update);
     gsap.ticker.lagSmoothing(0);
 
+    // Sync Lenis with ScrollTrigger
     lenis.on("scroll", ScrollTrigger.update);
 
-    const ctx = gsap.context(() => {
-      gsap.utils.toArray<HTMLElement>(".fade-up").forEach((el) => {
-        gsap.fromTo(
-          el,
-          { opacity: 0, y: 30 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.8,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: el,
-              start: "top 80%",
-              toggleActions: "play none none reverse",
-            },
-          },
-        );
-      });
-    });
-
     return () => {
-      ctx.revert();
       lenis.destroy();
       gsap.ticker.remove(update);
       gsap.ticker.lagSmoothing(0.8, 33);

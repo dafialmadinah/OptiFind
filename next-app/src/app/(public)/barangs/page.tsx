@@ -1,8 +1,11 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactElement } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+import { useScrollScenes } from "@/hooks/useScrollScenes";
+import { SplashScreen } from "@/components/splash-screen";
 
 type Step = {
   title: string;
@@ -136,14 +139,19 @@ const SOCIAL_LINKS: SocialLink[] = [
 ];
 
 export default function LandingPage() {
+  useScrollScenes();
+  
   return (
-    <div className="bg-[#f2f5ff] text-slate-900">
-      <HeroSection />
-      <HowItWorks />
-      <CommunityImpact />
-      <Testimonials />
-      <LandingFooter />
-    </div>
+    <>
+      <SplashScreen />
+      <div className="min-h-screen bg-[#f2f5ff] text-slate-900">
+        <HeroSection />
+        <HowItWorks />
+        <CommunityImpact />
+        <Testimonials />
+        <LandingFooter />
+      </div>
+    </>
   );
 }
 
@@ -151,10 +159,10 @@ function LandingFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="relative overflow-hidden bg-gradient-to-br from-[#1a2d68] via-[#1e3675] to-[#223f8a] pb-10 pt-16 text-white">
+    <footer className="relative overflow-hidden bg-gradient-to-br from-[#1a2d68] via-[#1e3675] to-[#223f8a] py-16 text-white">
       <div className="pointer-events-none absolute left-1/2 -top-14 h-24 w-[90%] -translate-x-1/2 rounded-full bg-white/15 blur-3xl" />
-      <div className="absolute inset-0 pointer-events-none opacity-30">
-        <div className="absolute bottom-0 w-40 h-40 rounded-full -left-32 bg-white/10 blur-2xl" />
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-30">
+        <div className="absolute w-40 h-40 rounded-full -bottom-20 -left-32 bg-white/10 blur-2xl" />
         <div className="absolute w-32 h-32 rounded-full right-12 top-4 bg-white/10 blur-2xl" />
       </div>
       <div className="relative flex flex-col w-full max-w-6xl gap-12 px-6 mx-auto md:flex-row md:items-start md:justify-between">
@@ -217,18 +225,20 @@ function StarIcon() {
 
 function HeroSection() {
   return (
-    <section className="relative min-h-screen overflow-hidden hero-gradient">
+    <section className="relative flex items-center h-screen overflow-hidden section hero-gradient" data-section="hero">
       <div className="absolute inset-0 bg-gradient-to-t from-white/5 via-white/8 to-white/20" />
-      <div className="relative mx-auto flex min-h-[calc(100vh-120px)] max-w-[1200px] flex-col-reverse items-center justify-center gap-12 px-6 pb-16 pt-36 md:flex-row md:items-center md:justify-between md:px-12 lg:px-20">
-        <div className="max-w-xl text-center fade-up md:text-left">
-          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70 md:text-sm">PLATFORM OPTIFIND</p>
-          <h1 className="mt-6 text-[34px] font-bold leading-tight text-white md:text-[48px]">
+      <div className="container relative mx-auto flex max-w-[1200px] flex-col-reverse items-center justify-center gap-12 px-6 md:flex-row md:items-center md:justify-between md:px-12 lg:px-20 w-full">
+        <div className="max-w-xl text-center md:text-left">
+          <p data-step className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70 md:text-sm">
+            PLATFORM OPTIFIND
+          </p>
+          <h1 data-step className="mt-6 text-[34px] font-bold leading-tight text-white md:text-[48px]">
             Temukan Barangmu,<span className="text-[#f48b2f]"> Bantu Orang Lain Menemukan Miliknya</span>
           </h1>
-          <p className="mt-5 text-base text-white/85 md:text-lg">
+          <p data-step className="mt-5 text-base text-white/85 md:text-lg">
             Platform untuk melapor dan menemukan barang hilang di sekitar Anda dengan pencarian pintar dan koneksi komunitas.
           </p>
-          <div className="flex flex-col gap-3 mt-10 sm:flex-row sm:items-center">
+          <div data-step className="flex flex-col gap-3 mt-10 sm:flex-row sm:items-center">
             <Link
               href="/barangs/lapor-hilang"
               className="btn-glow inline-flex items-center justify-center rounded-[12px] bg-[#f48b2f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#dd7926] sm:min-w-[190px]"
@@ -243,14 +253,14 @@ function HeroSection() {
             </Link>
           </div>
         </div>
-        <div className="relative flex items-center justify-center w-full max-w-md md:max-w-lg">
+        <div data-step className="relative flex items-center justify-center w-full max-w-md md:max-w-lg">
           <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#f48b2f]/40 via-transparent to-[#4b74d7]/40 blur-3xl" />
           <Image
             src="/assets/logo.svg"
             alt="OptiFind Illustration"
             width={360}
             height={360}
-            className="floating relative h-auto w-3/4 max-w-[320px] drop-shadow-2xl md:w-full"
+            className="relative h-auto w-3/4 max-w-[320px] drop-shadow-2xl md:w-full"
             priority
           />
         </div>
@@ -261,19 +271,20 @@ function HeroSection() {
 
 function HowItWorks() {
   return (
-    <section className="py-16 bg-white">
-      <div className="max-w-5xl px-6 mx-auto text-center">
-        <h2 className="text-3xl font-semibold text-[#1d1d1d] md:text-4xl">Bagaimana OptiFind Bekerja</h2>
-        <p className="mt-3 text-sm text-[#6b6b6b] md:text-base">
+    <section className="flex items-center h-screen bg-white section" data-section="how">
+      <div className="container w-full max-w-5xl px-6 mx-auto text-center">
+        <h2 data-step className="text-3xl font-semibold text-[#1d1d1d] md:text-4xl">
+          Bagaimana OptiFind Bekerja
+        </h2>
+        <p data-step className="mt-3 text-sm text-[#6b6b6b] md:text-base">
           Proses sederhana dalam tiga langkah untuk membantu Anda menemukan barang yang hilang.
         </p>
         <div className="grid gap-6 mt-10 md:grid-cols-3">
-          {STEPS.map((step, index) => (
+          {STEPS.map((step) => (
             <div
               key={step.title}
-              className={`fade-up rounded-[18px] border border-[#e6e6e6] bg-white px-6 py-8 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md ${
-                index === 1 ? "fade-up-delay-1" : index === 2 ? "fade-up-delay-2" : ""
-              }`}
+              data-step
+              className="rounded-[18px] border border-[#e6e6e6] bg-white px-6 py-8 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md"
             >
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#f0f5ff]">
                 {step.icon}
@@ -290,27 +301,26 @@ function HowItWorks() {
 
 function CommunityImpact() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-[#203063] via-[#243873] to-[#142253] py-20 text-white">
+    <section className="section relative h-screen flex items-center overflow-hidden bg-gradient-to-br from-[#203063] via-[#243873] to-[#142253] text-white" data-section="impact">
       <div
         className="absolute inset-0 opacity-20"
         style={{ background: "radial-gradient(circle at top left, rgba(255,255,255,0.25), transparent 60%)" }}
       />
-      <div className="relative flex flex-col max-w-6xl gap-12 px-6 mx-auto md:flex-row md:items-center md:justify-between">
-        <div className="relative fade-up md:w-1/2">
-          <h2 className="text-4xl font-semibold leading-tight md:text-5xl">
+      <div className="container relative flex flex-col w-full max-w-6xl gap-12 px-6 mx-auto md:flex-row md:items-center md:justify-between">
+        <div className="relative md:w-1/2">
+          <h2 data-step className="text-4xl font-semibold leading-tight md:text-5xl">
             <span className="text-[#f48b2f]">Dampak</span> Komunitas Kami
           </h2>
-          <p className="mt-4 text-sm text-white/80 md:text-base">
+          <p data-step className="mt-4 text-sm text-white/80 md:text-base">
             Bersama membangun ekosistem kepedulian terhadap barang hilang dan temuan. Setiap laporan membawa harapan kembali kepada pemiliknya.
           </p>
         </div>
         <div className="grid gap-6 md:w-1/2 md:grid-cols-3">
-          {IMPACT_STATS.map((stat, index) => (
+          {IMPACT_STATS.map((stat) => (
             <div
               key={stat.label}
-              className={`fade-up rounded-[22px] bg-[#1f2d5c]/70 px-6 py-8 text-center shadow-xl backdrop-blur-sm transition hover:-translate-y-1 hover:shadow-2xl ${
-                index === 1 ? "fade-up-delay-1" : index === 2 ? "fade-up-delay-2" : ""
-              }`}
+              data-step
+              className="rounded-[22px] bg-[#1f2d5c]/70 px-6 py-8 text-center shadow-xl backdrop-blur-sm transition hover:-translate-y-1 hover:shadow-2xl"
             >
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f48b2f] text-[#142253] shadow-lg">
                 {stat.icon}
@@ -327,9 +337,9 @@ function CommunityImpact() {
 
 function Testimonials() {
   return (
-    <section className="relative py-20 bg-white">
-      <div className="mx-auto grid max-w-[1200px] gap-10 px-6 lg:grid-cols-[420px_1fr] lg:gap-16">
-        <div className="fade-up rounded-[32px] bg-gradient-to-br from-[#3d5086] to-[#2d3f6b] p-10 text-white shadow-2xl lg:-mt-20 lg:p-12">
+    <section className="relative flex items-center h-screen bg-white section" data-section="testimonials">
+      <div className="container mx-auto grid max-w-[1200px] gap-10 px-6 lg:grid-cols-[420px_1fr] lg:gap-16 w-full">
+        <div data-step className="rounded-[32px] bg-gradient-to-br from-[#3d5086] to-[#2d3f6b] p-10 text-white shadow-2xl lg:p-12">
           <div className="space-y-8">
             <h2 className="text-5xl font-bold leading-tight">
               Apa kata
@@ -365,12 +375,11 @@ function Testimonials() {
           </div>
         </div>
         <div className="space-y-6">
-          {TESTIMONIALS.map((item, index) => (
+          {TESTIMONIALS.map((item) => (
             <article
               key={item.name}
-              className={`fade-up rounded-[28px] bg-[#f8f9fa] px-10 py-8 shadow-lg transition hover:shadow-xl ${
-                index === 1 ? "fade-up-delay-1" : ""
-              }`}
+              data-step
+              className="rounded-[28px] bg-[#f8f9fa] px-10 py-8 shadow-lg transition hover:shadow-xl"
             >
               <div className="flex items-start gap-5">
                 <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#f48b2f] to-[#f5a85f] text-2xl font-bold text-white shadow-lg">
@@ -393,7 +402,7 @@ function Testimonials() {
               </div>
             </article>
           ))}
-          <div className="flex justify-end gap-4 pt-6">
+          <div data-step className="flex justify-end gap-4 pt-6">
             <button
               type="button"
               className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#f48b2f] bg-white text-2xl text-[#f48b2f] transition hover:bg-[#f48b2f] hover:text-white shadow-lg"
