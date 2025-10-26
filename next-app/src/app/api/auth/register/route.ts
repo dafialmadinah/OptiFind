@@ -2,6 +2,21 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { registerSchema } from "@/lib/validation";
+import { createClient } from "@supabase/supabase-js";
+
+// Service client hanya untuk insert user ke database
+// Gunakan anon key jika service role tidak tersedia
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseService = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  serviceKey,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
 
 export async function POST(request: Request) {
   if (!supabase) {
@@ -73,8 +88,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Insert user ke database dengan auth.uid
-    const { data: user, error: insertError } = await supabase
+    // 2. Insert user ke database dengan auth.uid menggunakan service client
+    const { data: user, error: insertError } = await supabaseService
       .from("users")
       .insert({
         id: authData.user.id, // Gunakan UUID dari Supabase Auth
@@ -90,11 +105,8 @@ export async function POST(request: Request) {
 
     if (insertError) {
       console.error("Database insert error:", insertError);
-      // Note: Dengan anon key, kita tidak bisa menghapus user dari auth
-      // User akan tetap ada di auth tapi tidak di database
-      // Alternatif: gunakan RLS policy untuk mencegah insert duplikat
       return NextResponse.json(
-        { message: "Gagal menyimpan data user." },
+        { message: "Gagal menyimpan data user: " + insertError.message },
         { status: 500 },
       );
     }
