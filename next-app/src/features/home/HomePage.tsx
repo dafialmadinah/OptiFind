@@ -186,8 +186,18 @@ export default function HomePage() {
                                 <BarangCard key={barang.id} barang={barang} />
                             ))
                         ) : (
-                            <div className="col-span-full text-center py-8 text-gray-500">
-                                Belum ada barang temuan
+                            <div className="col-span-full flex flex-col items-center justify-center py-8 px-4">
+                                <div className="w-24 h-24 mb-6 relative opacity-50">
+                                    <svg className="w-full h-full text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                                    Belum Ada Barang Temuan
+                                </h3>
+                                <p className="text-gray-500 text-center max-w-md mb-6">
+                                    Belum ada barang yang ditemukan saat ini. Jika Anda menemukan barang, silakan laporkan!
+                                </p>
                             </div>
                         )}
                     </div>
@@ -216,8 +226,18 @@ export default function HomePage() {
                                 <BarangCard key={barang.id} barang={barang} />
                             ))
                         ) : (
-                            <div className="col-span-full text-center py-8 text-gray-500">
-                                Belum ada barang hilang
+                            <div className="col-span-full flex flex-col items-center justify-center py-8 px-4">
+                                <div className="w-24 h-24 mb-6 relative opacity-50">
+                                    <svg className="w-full h-full text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                                    Belum Ada Laporan Barang Hilang
+                                </h3>
+                                <p className="text-gray-500 text-center max-w-md mb-6">
+                                    Belum ada laporan barang hilang saat ini. Jika Anda kehilangan barang, segera laporkan!
+                                </p>
                             </div>
                         )}
                     </div>
