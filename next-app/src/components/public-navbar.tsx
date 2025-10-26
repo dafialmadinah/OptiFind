@@ -15,7 +15,7 @@ export function PublicNavbar() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            window.location.href = `/barangs-list?q=${encodeURIComponent(
+            window.location.href = `/cari?q=${encodeURIComponent(
                 searchQuery
             )}`;
         }
