@@ -169,7 +169,7 @@ export default function HomePage() {
                             Barang Temuan Terbaru
                         </h2>
                         <Link
-                            href="/barangs-list?tipe=temuan"
+                            href="/cari?tipe=temuan"
                             className="text-blue-600 hover:text-blue-700 font-medium text-sm"
                         >
                             Lihat Semua →
@@ -199,7 +199,7 @@ export default function HomePage() {
                             Barang Hilang Terbaru
                         </h2>
                         <Link
-                            href="/barangs-list?tipe=hilang"
+                            href="/cari?tipe=hilang"
                             className="text-blue-600 hover:text-blue-700 font-medium text-sm"
                         >
                             Lihat Semua →
