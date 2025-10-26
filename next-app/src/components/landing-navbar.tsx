@@ -18,12 +18,12 @@ export function LandingNavbar() {
   return (
     <header className="fixed left-0 right-0 z-50 flex justify-center px-4 pointer-events-none top-4">
       <div
-        className={`pointer-events-auto flex w-full max-w-4xl items-center justify-between gap-4 rounded-[22px] bg-[#8b8891]/95 px-6 py-3 text-white backdrop-blur transition-shadow ${
-          scrolled ? "shadow-2xl" : "shadow-lg"
+        className={`pointer-events-auto flex w-full max-w-4xl items-center justify-between gap-4 rounded-[22px] bg-gray-900/30 px-6 py-3 text-white backdrop-blur-md transition-all ${
+          scrolled ? "shadow-2xl bg-gray-900/40" : "shadow-lg"
         }`}
       >
         <Link href="/" className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/20 backdrop-blur-sm">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm">
             <Image src="/assets/logo_kecil.svg" alt="OptiFind" width={28} height={28} className="h-7 w-7" />
           </div>
           <span className="text-lg font-semibold tracking-wide text-white">OptiFind</span>
@@ -74,7 +74,7 @@ export function LandingNavbar() {
       </div>
 
       {menuOpen && (
-        <div className="pointer-events-auto absolute top-full mt-3 w-full max-w-4xl rounded-2xl bg-[#8b8891]/95 p-4 text-white shadow-lg md:hidden">
+        <div className="pointer-events-auto absolute top-full mt-3 w-full max-w-4xl rounded-2xl bg-gray-900/40 backdrop-blur-md p-4 text-white shadow-lg md:hidden">
           <Link
             href="/#cara-kerja"
             onClick={() => setMenuOpen(false)}
