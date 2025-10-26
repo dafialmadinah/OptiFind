@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
+import { useAuth } from "@/lib/auth-context";
 
 // === Schema Validasi ===
 const loginSchema = z.object({
@@ -20,6 +20,7 @@ export default function LoginPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const callbackUrl = searchParams.get("callbackUrl") ?? "/barangs";
+    const { signIn } = useAuth();
     const [remember, setRemember] = useState(false);
 
     const {
@@ -33,18 +34,16 @@ export default function LoginPage() {
 
     const onSubmit = handleSubmit(async (values) => {
         setServerError(null);
-        const result = await signIn("credentials", {
-            redirect: false,
-            email: values.email,
-            password: values.password,
-            callbackUrl,
-        });
-        if (result?.error) {
-            setServerError(result.error);
-            setError("password", { message: result.error });
-            return;
+        
+        try {
+            await signIn(values.email, values.password);
+            router.push(callbackUrl);
+            router.refresh();
+        } catch (error: any) {
+            const message = error?.message || "Email atau password tidak valid.";
+            setServerError(message);
+            setError("password", { message });
         }
-        router.push(result?.url ?? callbackUrl);
     });
 
     return (
@@ -170,27 +169,6 @@ export default function LoginPage() {
                                 {isSubmitting ? "Memproses..." : "Masuk"}
                             </button>
                         </div>
-
-                        {/* Divider */}
-                        <div className="flex items-center my-4">
-                            <hr className="flex-grow border-t border-gray-300" />
-                            <span className="mx-4 text-gray-500">atau</span>
-                            <hr className="flex-grow border-t border-gray-300" />
-                        </div>
-
-                        {/* Google Button */}
-                        <button
-                            type="button"
-                            className="flex items-center justify-center gap-x-3 h-[45px] w-full bg-white border border-gray-300 text-gray-800 font-medium font-poppins rounded-lg py-2 hover:bg-gray-50 transition"
-                        >
-                            <Image
-                                src="/assets/google.svg"
-                                alt="Google Icon"
-                                width={22}
-                                height={22}
-                            />
-                            Masuk dengan Google
-                        </button>
                     </form>
                 </div>
 
@@ -323,27 +301,6 @@ export default function LoginPage() {
                                     {isSubmitting ? "Memproses..." : "Masuk"}
                                 </button>
                             </div>
-
-                            {/* Divider */}
-                            <div className="flex items-center my-4">
-                                <hr className="flex-grow border-t border-gray-300" />
-                                <span className="mx-4 text-gray-500">atau</span>
-                                <hr className="flex-grow border-t border-gray-300" />
-                            </div>
-
-                            {/* Google Button */}
-                            <button
-                                type="button"
-                                className="flex items-center justify-center gap-x-3 h-[45px] w-full bg-white border border-gray-300 text-gray-800 font-medium font-poppins rounded-lg py-2 hover:bg-gray-50 transition"
-                            >
-                                <Image
-                                    src="/assets/google.svg"
-                                    alt="Google Icon"
-                                    width={22}
-                                    height={22}
-                                />
-                                Masuk dengan Google
-                            </button>
                         </form>
 
                         {/* Register */}

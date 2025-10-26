@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { uploadBarangPhoto } from "@/lib/supabase-storage";
 
 export default function LaporHilangPage() {
     const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ export default function LaporHilangPage() {
         kontak: "",
         foto: null as File | null,
     });
+    const [isUploading, setIsUploading] = useState(false);
 
     const handleChange = (
         e: React.ChangeEvent<
@@ -27,9 +29,76 @@ export default function LaporHilangPage() {
         setFormData((prev) => ({ ...prev, foto: file }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        alert("Form akan dikirim (simulasi).");
+        
+        if (!formData.foto) {
+            alert("Silakan pilih foto barang terlebih dahulu.");
+            return;
+        }
+
+        setIsUploading(true);
+
+        try {
+            // Upload foto ke Supabase Storage
+            const fotoUrl = await uploadBarangPhoto(formData.foto);
+
+            // Kirim data ke API dengan URL foto (auth otomatis dari cookie)
+            const response = await fetch("/api/barangs", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    nama: formData.nama,
+                    kategori: formData.kategori,
+                    waktu: formData.waktu,
+                    lokasi: formData.lokasi,
+                    deskripsi: formData.deskripsi,
+                    kontak: formData.kontak,
+                    foto: fotoUrl,
+                    tipe: "hilang",
+                }),
+            });
+
+            if (response.status === 401) {
+                alert("Anda harus login terlebih dahulu.");
+                window.location.href = '/login';
+                return;
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Gagal mengirim laporan");
+            }
+
+            alert("Laporan berhasil dikirim!");
+            
+            // Reset form
+            setFormData({
+                nama: "",
+                kategori: "",
+                waktu: "",
+                lokasi: "",
+                deskripsi: "",
+                kontak: "",
+                foto: null,
+            });
+            
+            // Reset file input
+            const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+            if (fileInput) fileInput.value = "";
+
+        } catch (error) {
+            console.error("Error submitting form:", error);
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Terjadi kesalahan saat mengirim laporan"
+            );
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (
@@ -193,9 +262,10 @@ export default function LaporHilangPage() {
                     <div className="w-full sm:max-w-sm sm:mx-auto">
                         <button
                             type="submit"
-                            className="w-full rounded-[10px] bg-[#f98125] px-6 py-2 font-poppins font-bold text-white text-[16px] transition hover:bg-[#d96f1f]"
+                            disabled={isUploading}
+                            className="w-full rounded-[10px] bg-[#f98125] px-6 py-2 font-poppins font-bold text-white text-[16px] transition hover:bg-[#d96f1f] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Kirim Laporan
+                            {isUploading ? "Mengirim..." : "Kirim Laporan"}
                         </button>
                     </div>
                 </form>

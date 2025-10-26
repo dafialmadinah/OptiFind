@@ -1,17 +1,19 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { registerSchema } from "@/lib/validation";
+import { useAuth } from "@/lib/auth-context";
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
   const router = useRouter();
+  const { signIn } = useAuth();
+  
   const {
     register,
     handleSubmit,
@@ -54,14 +56,13 @@ export function RegisterForm() {
     }
 
     // Auto login after registration
-    await signIn("credentials", {
-      redirect: false,
-      email: values.email,
-      password: values.password,
-      callbackUrl: "/barangs",
-    });
-
-    router.push("/barangs");
+    try {
+      await signIn(values.email, values.password);
+      router.push("/barangs");
+      router.refresh();
+    } catch (error) {
+      router.push("/login");
+    }
   });
 
   return (

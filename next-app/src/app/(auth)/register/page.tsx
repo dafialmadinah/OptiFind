@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { useAuth } from "@/lib/auth-context";
 
 // === Schema Validasi ===
 const registerSchema = z.object({
@@ -21,6 +21,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -29,6 +30,7 @@ export default function RegisterPage() {
     watch,
     setValue,
     formState: { errors, isSubmitting },
+    setError,
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
   });
@@ -44,10 +46,45 @@ export default function RegisterPage() {
   }, [nameValue, passwordValue, setValue]);
 
   const onSubmit = handleSubmit(async (values) => {
+    setServerError(null);
+
     try {
-      console.log("Form values:", values);
-      router.push("/login");
-    } catch {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: values.name,
+          username: values.name.toLowerCase().replace(/\s+/g, ""),
+          email: values.email,
+          noTelepon: values.no_telepon,
+          password: values.password,
+        }),
+      });
+
+      if (response.status === 409) {
+        const payload = await response.json();
+        setServerError(payload.message);
+        setError("email", { message: payload.message });
+        return;
+      }
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        setServerError(payload?.message ?? "Registrasi gagal. Silakan coba lagi.");
+        return;
+      }
+
+      // Auto login after registration
+      try {
+        await signIn(values.email, values.password);
+        router.push("/barangs");
+        router.refresh();
+      } catch (error) {
+        router.push("/login");
+      }
+    } catch (error) {
       setServerError("Terjadi kesalahan saat register");
     }
   });
@@ -104,27 +141,18 @@ export default function RegisterPage() {
               </div>
             ))}
 
+            {serverError && (
+              <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                {serverError}
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full text-[16px] bg-[#F98125] hover:bg-[#e0701e] text-white font-semibold font-poppins py-2 rounded-lg transition"
+              className="w-full text-[16px] bg-[#F98125] hover:bg-[#e0701e] text-white font-semibold font-poppins py-2 rounded-lg transition disabled:opacity-50"
             >
               {isSubmitting ? "Memproses..." : "Daftar"}
-            </button>
-
-            <div className="flex items-center my-4">
-              <hr className="flex-grow border-t border-gray-300" />
-              <span className="mx-4 text-gray-500">atau</span>
-              <hr className="flex-grow border-t border-gray-300" />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => signIn("google")}
-              className="flex items-center justify-center gap-x-3 h-[45px] w-full bg-white border border-gray-300 text-gray-800 font-medium font-poppins rounded-lg py-2 hover:bg-gray-50 transition"
-            >
-              <Image src="/assets/google.svg" alt="Google Icon" width={22} height={22} />
-              Daftar dengan Google
             </button>
           </form>
         </div>
@@ -183,30 +211,21 @@ export default function RegisterPage() {
                 </div>
               ))}
 
+              {serverError && (
+                <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 mb-3">
+                  {serverError}
+                </div>
+              )}
+
               <div className="mt-6">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full text-[16px] bg-[#F98125] hover:bg-[#e0701e] text-white font-semibold font-poppins py-2 rounded-lg transition"
+                  className="w-full text-[16px] bg-[#F98125] hover:bg-[#e0701e] text-white font-semibold font-poppins py-2 rounded-lg transition disabled:opacity-50"
                 >
                   {isSubmitting ? "Memproses..." : "Daftar"}
                 </button>
               </div>
-
-              <div className="flex items-center my-4">
-                <hr className="flex-grow border-t border-gray-300" />
-                <span className="mx-4 text-gray-500">atau</span>
-                <hr className="flex-grow border-t border-gray-300" />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => signIn("google")}
-                className="flex items-center justify-center gap-x-3 h-[45px] w-full bg-white border border-gray-300 text-gray-800 font-medium font-poppins rounded-lg py-2 hover:bg-gray-50 transition"
-              >
-                <Image src="/assets/google.svg" alt="Google Icon" width={22} height={22} />
-                Daftar dengan Google
-              </button>
             </form>
 
             <div className="mt-5 text-center">

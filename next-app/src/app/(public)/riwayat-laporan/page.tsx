@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/lib/auth-context';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BarangFilter } from '@/components/barang-filter';
@@ -30,7 +30,7 @@ interface FilterState {
 
 export default function RiwayatLaporanPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { user, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'temuan' | 'hilang'>('temuan');
   const [barangs, setBarangs] = useState<Barang[]>([]);
   const [filteredBarangs, setFilteredBarangs] = useState<Barang[]>([]);
@@ -42,15 +42,17 @@ export default function RiwayatLaporanPage() {
     urutkan: '',
   });
 
-  const isAuthenticated = status === 'authenticated';
+  const isAuthenticated = !!user;
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchBarangs();
-    } else if (status === 'unauthenticated') {
-      setLoading(false);
+    if (!authLoading) {
+      if (isAuthenticated) {
+        fetchBarangs();
+      } else {
+        setLoading(false);
+      }
     }
-  }, [isAuthenticated, status]);
+  }, [isAuthenticated, authLoading]);
 
   useEffect(() => {
     applyFilters();
@@ -58,17 +60,7 @@ export default function RiwayatLaporanPage() {
 
   const fetchBarangs = async () => {
     try {
-      // Try to get token, but don't require it for public view
-      const token = localStorage.getItem('token');
-      
-      const headers: HeadersInit = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const response = await fetch('/api/barangs', {
-        headers,
-      });
+      const response = await fetch('/api/barangs');
 
       if (!response.ok) {
         throw new Error('Failed to fetch barangs');

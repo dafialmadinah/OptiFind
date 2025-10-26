@@ -1,12 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { loginSchema } from "@/lib/validation";
+import { useAuth } from "@/lib/auth-context";
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
@@ -14,6 +14,8 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/barangs";
+  const { signIn } = useAuth();
+  
   const {
     register,
     handleSubmit,
@@ -30,20 +32,16 @@ export function LoginForm() {
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
-    const result = await signIn("credentials", {
-      redirect: false,
-      email: values.email,
-      password: values.password,
-      callbackUrl,
-    });
-
-    if (result?.error) {
-      setServerError(result.error);
-      setError("password", { message: result.error });
-      return;
+    
+    try {
+      await signIn(values.email, values.password);
+      router.push(callbackUrl);
+      router.refresh();
+    } catch (error: any) {
+      const message = error?.message || "Email atau password tidak valid.";
+      setServerError(message);
+      setError("password", { message });
     }
-
-    router.push(result?.url ?? callbackUrl);
   });
 
   return (

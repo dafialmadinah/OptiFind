@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { barangSchema } from "@/lib/validation";
 import { getBarangById, searchBarangs } from "@/lib/barang-service";
-import { getAuthUser } from "@/lib/auth-utils";
+import { getSupabaseUser } from "@/lib/supabase-server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = getAuthUser(request);
+  const user = await getSupabaseUser(request);
 
   if (!user) {
     return NextResponse.json({ message: "Unauthorised" }, { status: 401 });
@@ -90,8 +90,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get pelapor_id from authenticated user
-    const pelaporId = Number(user.id);
+    // Get pelapor_id from authenticated user (UUID dari Supabase Auth)
+    const pelaporId = user.id;
 
     // Default status_id (1 = Belum Dikembalikan)
     const statusId = Number(json.statusId) || 1;

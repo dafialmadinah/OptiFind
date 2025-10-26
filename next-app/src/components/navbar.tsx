@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 const navLinks = [
   { label: "Beranda", href: "/dashboard" },
@@ -19,16 +19,10 @@ const navLinks = [
   { label: "Riwayat", href: "/riwayat-laporan" },
 ];
 
-type NavbarProps = {
-  user: {
-    name?: string | null;
-    email?: string | null;
-    role?: string | null;
-  } | null;
-};
-
-export function Navbar({ user }: NavbarProps) {
+export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, signOut: authSignOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
@@ -147,10 +141,13 @@ export function Navbar({ user }: NavbarProps) {
         <div className="items-center hidden gap-3 md:flex">
           {user ? (
             <>
-              <span className="text-sm text-white/80">{user.name ?? user.email}</span>
+              <span className="text-sm text-white/80">{user.user_metadata?.name ?? user.email}</span>
               <button
                 type="button"
-                onClick={() => signOut({ callbackUrl: "/" })}
+                onClick={async () => {
+                  await authSignOut();
+                  router.push("/");
+                }}
                 className="rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white hover:text-[#6f6b70]"
               >
                 Keluar
@@ -229,9 +226,10 @@ export function Navbar({ user }: NavbarProps) {
           {user ? (
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 setMenuOpen(false);
-                void signOut({ callbackUrl: "/" });
+                await authSignOut();
+                router.push("/");
               }}
               className="mt-2 w-full rounded-full bg-white/10 px-4 py-2 text-sm font-semibold uppercase tracking-wide transition hover:bg-white hover:text-[#6f6b70]"
             >

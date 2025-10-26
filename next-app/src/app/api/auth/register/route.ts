@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase"; // ubah import
+import { supabase } from "@/lib/supabase";
 import { registerSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     const { name, username, email, noTelepon, password } = parsed.data;
 
-    // Cek apakah user sudah ada
+    // Cek apakah user sudah ada di database
     const { data: existing, error: existingError } = await supabase
       .from("users")
       .select("id")
@@ -42,13 +42,42 @@ export async function POST(request: Request) {
       );
     }
 
-    // Hash password
+    // Hash password untuk database
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert user baru
+    // 1. Create user di Supabase Auth menggunakan signUp
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          username,
+          no_telepon: noTelepon ?? null,
+        },
+      },
+    });
+
+    if (authError) {
+      console.error("Auth user creation error:", authError);
+      return NextResponse.json(
+        { message: authError.message || "Gagal membuat user auth." },
+        { status: 500 },
+      );
+    }
+
+    if (!authData.user) {
+      return NextResponse.json(
+        { message: "Gagal membuat user." },
+        { status: 500 },
+      );
+    }
+
+    // 2. Insert user ke database dengan auth.uid
     const { data: user, error: insertError } = await supabase
       .from("users")
       .insert({
+        id: authData.user.id, // Gunakan UUID dari Supabase Auth
         name,
         username,
         email,
@@ -60,7 +89,14 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError) {
-      throw insertError;
+      console.error("Database insert error:", insertError);
+      // Note: Dengan anon key, kita tidak bisa menghapus user dari auth
+      // User akan tetap ada di auth tapi tidak di database
+      // Alternatif: gunakan RLS policy untuk mencegah insert duplikat
+      return NextResponse.json(
+        { message: "Gagal menyimpan data user." },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({ user }, { status: 201 });

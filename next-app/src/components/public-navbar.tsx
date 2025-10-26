@@ -3,17 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
-type PublicNavbarProps = {
-    user: {
-        name?: string | null;
-        email?: string | null;
-        role?: string | null;
-    } | null;
-};
-
-export function PublicNavbar({ user }: PublicNavbarProps) {
+export function PublicNavbar() {
+    const router = useRouter();
+    const { user, signOut: authSignOut } = useAuth();
     const [searchQuery, setSearchQuery] = useState("");
     const [menuOpen, setMenuOpen] = useState(false);
 
@@ -86,12 +81,13 @@ export function PublicNavbar({ user }: PublicNavbarProps) {
                         {user ? (
                             <div className="flex items-center gap-3">
                                 <span className="text-sm text-white/90">
-                                    {user.name || user.email}
+                                    {user.user_metadata?.name || user.email}
                                 </span>
                                 <button
-                                    onClick={() =>
-                                        signOut({ callbackUrl: "/" })
-                                    }
+                                    onClick={async () => {
+                                        await authSignOut();
+                                        router.push("/");
+                                    }}
                                     className="text-white hover:text-blue-200 transition-colors font-medium whitespace-nowrap"
                                 >
                                     Keluar
@@ -154,12 +150,13 @@ export function PublicNavbar({ user }: PublicNavbarProps) {
                             {user ? (
                                 <>
                                     <span className="text-sm text-white/90 py-2">
-                                        {user.name || user.email}
+                                        {user.user_metadata?.name || user.email}
                                     </span>
                                     <button
-                                        onClick={() => {
+                                        onClick={async () => {
                                             setMenuOpen(false);
-                                            signOut({ callbackUrl: "/" });
+                                            await authSignOut();
+                                            router.push("/");
                                         }}
                                         className="text-white hover:text-blue-200 transition-colors font-medium text-left py-2"
                                     >
