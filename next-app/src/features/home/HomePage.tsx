@@ -15,10 +15,10 @@ dayjs.locale("id");
 const categories = [
     { id: 1, name: "Dompet", icon: "/assets/dompet.svg" },
     { id: 2, name: "Kunci", icon: "/assets/kunci.svg" },
-    { id: 3, name: "Aksesoris", icon: "/assets/jam.svg" },
+    { id: 3, name: "Aksesoris", icon: "/assets/aksesoris.svg" },
     { id: 4, name: "Smartphone", icon: "/assets/smartphone.svg" },
     { id: 5, name: "Elektronik", icon: "/assets/elektronik.svg" },
-    { id: 6, name: "Botol Minum", icon: "/assets/botol minum.svg" },
+    { id: 6, name: "Botol", icon: "/assets/botol minum.svg" },
     { id: 7, name: "Alat Tulis", icon: "/assets/alat tulis.svg" },
     { id: 8, name: "Pakaian", icon: "/assets/pakaian.svg" },
     { id: 9, name: "Dokumen", icon: "/assets/dokumen.svg" },
@@ -127,18 +127,18 @@ export default function HomePage() {
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between gap-4">
                         {/* Logo */}
-                        <Link href="/dashboard" className="flex items-center gap-2 flex-shrink-0">
-                            <div className="bg-white rounded-full p-2 flex items-center justify-center">
+                        <Link
+                            href="/dashboard"
+                            className="flex items-center gap-2 flex-shrink-0"
+                        >
+                            <div className="px-2 flex items-center justify-center">
                                 <Image
-                                    src="/assets/logo_kecil.svg"
-                                    alt="Found It!"
-                                    width={28}
-                                    height={28}
+                                    src="/assets/logo_optifind.png"
+                                    alt="Logo"
+                                    width={120}
+                                    height={30}
                                 />
                             </div>
-                            <span className="text-xl font-bold whitespace-nowrap">
-                                Found <span className="text-orange-500">It!</span>
-                            </span>
                         </Link>
 
                         {/* Search Bar - Center */}
@@ -188,12 +188,22 @@ export default function HomePage() {
                         </nav>
 
                         {/* Mobile Menu Button */}
-                        <button 
+                        <button
                             className="lg:hidden p-2 hover:bg-blue-800 rounded-lg transition-colors"
                             aria-label="Menu"
                         >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            <svg
+                                className="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M4 6h16M4 12h16M4 18h16"
+                                />
                             </svg>
                         </button>
                     </div>
@@ -227,7 +237,7 @@ export default function HomePage() {
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">
                         Kategori Barang
                     </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-3">
                         {categories.map((category) => (
                             <CategoryCard
                                 key={category.id}
