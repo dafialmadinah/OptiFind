@@ -1,62 +1,70 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 
-export function useFooterReveal(defaultFooterH = 420) {
+export function useFooterReveal() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const coverRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const section = document.querySelector<HTMLElement>("#testimoni");
-    const cover = section?.querySelector<HTMLElement>(".cover");
+    const section = sectionRef.current;
+    const cover = coverRef.current;
     const footer = document.querySelector<HTMLElement>("[data-footer-underlay]");
-    
+
     if (!section || !cover || !footer) return;
 
-    // Clean up existing ScrollTriggers for this section
-    ScrollTrigger.getAll().forEach(st => {
-      if (st.trigger === section) st.kill();
-    });
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) {
+      gsap.set(cover, { y: 0 });
+      return;
+    }
 
-    const measure = () => {
-      // ukur tinggi footer aktual
-      const h = footer.getBoundingClientRect().height || defaultFooterH;
-      return Math.max(200, Math.round(h)); // guard minimal
-    };
-    
-    let footerH = measure();
+    const getFooterHeight = () => Math.max(footer.getBoundingClientRect().height, 0);
+    let footerHeight = 0;
 
-    // update tinggi bila viewport berubah
-    const ro = new ResizeObserver(() => { 
-      footerH = measure(); 
-      ScrollTrigger.refresh(); 
-    });
-    ro.observe(footer);
+    const ctx = gsap.context(() => {
+      footerHeight = Math.round(getFooterHeight());
 
-    if (reduce) return () => ro.disconnect();
+      gsap.set(cover, { willChange: "transform" });
 
-    // Pin testimonials dan scrub setinggi footerH
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: section,
-        start: "top top",
-        end: () => "+=" + footerH, // jarak scroll = tinggi footer
-        scrub: 1,
-        pin: true,
-        pinSpacing: true,
-        anticipatePin: 1,
-      }
-    });
-
-    // Geser cover naik PERSIS setinggi footer, bukan -100vh
-    tl.to(cover, { 
-      y: () => -footerH, 
-      ease: "none" 
-    });
-
-    return () => { 
-      ro.disconnect(); 
-      ScrollTrigger.getAll().forEach(st => {
-        if (st.trigger === section) st.kill();
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: section,
+          start: "top top",
+          end: () => `+=${footerHeight}`,
+          scrub: 2, // Slower, smoother scrub matching other sections
+          pin: true,
+          pinSpacing: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+        },
       });
+
+      tl.to(cover, {
+        y: () => -footerHeight,
+        ease: "none",
+      });
+
+      ScrollTrigger.refresh();
+    }, section);
+
+    const resizeObserver = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(() => {
+          const nextHeight = Math.round(getFooterHeight());
+          if (nextHeight !== footerHeight) {
+            footerHeight = nextHeight;
+            ScrollTrigger.refresh();
+          }
+        })
+      : null;
+
+    resizeObserver?.observe(footer);
+
+    return () => {
+      resizeObserver?.disconnect();
+      ctx.revert();
     };
-  }, [defaultFooterH]);
+  }, []);
+
+  return { sectionRef, coverRef };
 }

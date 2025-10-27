@@ -2,15 +2,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactElement } from "react";
-import { useEffect, useRef } from "react";
-import type { LucideIcon } from "lucide-react";
-import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+import { useEffect } from "react";
+import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { LandingNavbar } from "@/components/landing-navbar";
 import { HomeSplashScreen } from "@/components/home-splash-screen";
+import { FooterUnderlay } from "@/components/FooterUnderlay";
 import { useMorphingHowItWorks } from "@/hooks/useMorphingHowItWorks";
 import { useImpactCountUp } from "@/hooks/useImpactCountUp";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useFooterReveal } from "@/hooks/useFooterReveal";
 
 type Step = {
   title: string;
@@ -123,137 +122,142 @@ const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
-type SocialLink = {
-  label: string;
-  href: string;
-  Icon: LucideIcon;
-};
+const HERO_SELECTORS = {
+  headline: "[data-hero-headline]",
+  copy: "[data-hero-copy]",
+  subtitle: "[data-hero-subtitle]",
+  primaryCta: "[data-hero-cta-primary]",
+  secondaryCta: "[data-hero-cta-secondary]",
+  visual: "[data-hero-visual]",
+} as const;
 
-const QUICK_LINKS = [
-  { label: "Tentang Kami", href: "/tentang" },
-  { label: "Fitur Platform", href: "/fitur" },
-  { label: "Hubungi Kami", href: "/kontak" },
-  { label: "Kebijakan Privasi", href: "/privacy" },
-];
+function useLandingAnimations() {
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
 
-const SOCIAL_LINKS: SocialLink[] = [
-  { label: "Facebook", href: "https://facebook.com", Icon: Facebook },
-  { label: "Instagram", href: "https://instagram.com", Icon: Instagram },
-  { label: "Twitter", href: "https://twitter.com", Icon: Twitter },
-  { label: "LinkedIn", href: "https://linkedin.com", Icon: Linkedin },
-];
+    const ctx = gsap.context(() => {
+      const hero = document.querySelector<HTMLElement>("[data-hero]");
+      if (hero) {
+        const subtitle = hero.querySelector<HTMLElement>(HERO_SELECTORS.subtitle);
+        const headline = hero.querySelector<HTMLElement>(HERO_SELECTORS.headline);
+        const copy = hero.querySelector<HTMLElement>(HERO_SELECTORS.copy);
+        const primaryCta = hero.querySelector<HTMLElement>(HERO_SELECTORS.primaryCta);
+        const secondaryCta = hero.querySelector<HTMLElement>(HERO_SELECTORS.secondaryCta);
+        const visual = hero.querySelector<HTMLElement>(HERO_SELECTORS.visual);
+
+        [subtitle, headline, copy, primaryCta, secondaryCta].forEach((el) => {
+          if (el) gsap.set(el, { autoAlpha: 0, y: 32 });
+        });
+
+        if (visual) {
+          gsap.set(visual, { autoAlpha: 0, y: 40, scale: 0.95 });
+        }
+
+        const heroTimeline = gsap.timeline({
+          scrollTrigger: {
+            trigger: hero,
+            start: "top 75%",
+            once: true,
+          },
+        });
+
+        if (subtitle)
+          heroTimeline.to(subtitle, { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" }, 0);
+        if (headline)
+          heroTimeline.to(
+            headline,
+            { autoAlpha: 1, y: 0, duration: 1, ease: "power2.out" },
+            subtitle ? "<+=0.15" : 0
+          );
+        if (copy)
+          heroTimeline.to(
+            copy,
+            { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" },
+            "<+=0.15"
+          );
+        if (primaryCta)
+          heroTimeline.to(
+            primaryCta,
+            { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" },
+            "<+=0.2"
+          );
+        if (secondaryCta)
+          heroTimeline.to(
+            secondaryCta,
+            { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" },
+            "<+=0.1"
+          );
+        if (visual)
+          heroTimeline.to(
+            visual,
+            { autoAlpha: 1, y: 0, scale: 1, duration: 1.2, ease: "power2.out" },
+            "<+=0.2"
+          );
+      }
+
+      const fadeUps = gsap.utils.toArray<HTMLElement>(".fade-up");
+      fadeUps.forEach((element) => {
+        const delayClass = element.classList.contains("fade-up-delay-1")
+          ? 0.15
+          : element.classList.contains("fade-up-delay-2")
+          ? 0.3
+          : 0;
+
+        gsap.set(element, { autoAlpha: 0, y: 40, willChange: "transform" });
+        gsap.to(element, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 1,
+          ease: "power2.out",
+          delay: delayClass,
+          scrollTrigger: {
+            trigger: element,
+            start: "top 85%",
+            once: true,
+          },
+        });
+      });
+
+      ScrollTrigger.refresh();
+    });
+
+    return () => {
+      ctx.revert();
+    };
+  }, []);
+}
 
 export default function LandingPage() {
+  useLandingAnimations();
+
   return (
-    <>
-      <HomeSplashScreen />
-      <div className="bg-[#f2f5ff] text-slate-900">
-        <LandingNavbar />
-        <HeroSection />
-        <HowItWorks />
-        <CommunityImpact />
+    <div className="relative min-h-screen overflow-x-hidden">
+      {/* Fixed footer at bottom, behind everything */}
+      <FooterUnderlay />
+      
+      {/* Main content above footer */}
+      <main className="relative z-10">
+        <HomeSplashScreen />
+        <div className="bg-[#f2f5ff] text-slate-900">
+          <LandingNavbar />
+          <HeroSection />
+          <HowItWorks />
+          <CommunityImpact />
+        </div>
         <TestimonialsWithFooterReveal />
-      </div>
-    </>
+      </main>
+    </div>
   );
 }
 
 function TestimonialsWithFooterReveal() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const coverRef = useRef<HTMLDivElement>(null);
-  
-  useEffect(() => {
-    if (!sectionRef.current || !coverRef.current) return;
-    
-    const section = sectionRef.current;
-    const cover = coverRef.current;
-    
-    // Measure actual heights to calculate proper end position
-    const footerHeight = section.querySelector('.bg-gradient-to-br')?.scrollHeight || 400;
-    const endPosition = `+=${footerHeight}`;
-    
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: section,
-        start: "top top",
-        end: endPosition,
-        scrub: 1,
-        pin: true,
-        pinSpacing: true,
-      }
-    });
-    
-    // Slide cover up to reveal footer
-    tl.to(cover, { yPercent: -100, ease: "none" });
-    
-    return () => {
-      ScrollTrigger.getAll().forEach(trigger => {
-        if (trigger.trigger === section) trigger.kill();
-      });
-    };
-  }, []);
+  const { sectionRef, coverRef } = useFooterReveal();
 
   return (
-    <section ref={sectionRef} className="relative">
-      {/* Footer fixed behind */}
-      <div className="overflow-hidden bg-gradient-to-br from-[#1a2d68] via-[#1e3675] to-[#223f8a] text-white">
-        <div className="pointer-events-none absolute left-1/2 -top-14 h-24 w-[90%] -translate-x-1/2 rounded-full bg-white/15 blur-3xl" />
-        <div className="absolute inset-0 pointer-events-none opacity-30">
-          <div className="absolute bottom-0 w-40 h-40 rounded-full -left-32 bg-white/10 blur-2xl" />
-          <div className="absolute w-32 h-32 rounded-full right-12 top-4 bg-white/10 blur-2xl" />
-        </div>
-        <div className="relative flex flex-col w-full max-w-6xl gap-12 px-6 py-16 mx-auto md:flex-row md:items-start md:justify-between">
-          <div className="max-w-sm space-y-4">
-            <div className="flex items-center gap-1">
-              <Image src="/assets/magnifier.svg" alt="OptiFind" width={40} height={40} className="w-10 h-10" />
-              <p className="text-2xl font-semibold leading-tight">
-                <span className="text-white">pti</span>
-                <span className="text-[#f48b2f]">Find</span>
-              </p>
-            </div>
-            <p className="text-sm text-white/70">Teknologi yang Menyatukan Kepedulian.</p>
-          </div>
-
-          <div className="grid flex-1 gap-10 text-sm sm:grid-cols-[1fr] md:grid-cols-2 md:gap-16">
-            <div>
-              <p className="text-sm font-semibold tracking-wide text-white uppercase">Navigasi Cepat</p>
-              <ul className="mt-4 space-y-2 text-sm text-white/75">
-                {QUICK_LINKS.map((item) => (
-                  <li key={item.label}>
-                    <Link href={item.href} className="transition hover:text-white">
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <p className="text-sm font-semibold tracking-wide text-white uppercase">Ikuti Kami</p>
-              <div className="grid grid-cols-2 gap-3 mt-4">
-                {SOCIAL_LINKS.map(({ label, href, Icon }) => (
-                  <Link
-                    key={label}
-                    href={href}
-                    aria-label={label}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white hover:text-[#1a2d68]"
-                  >
-                    <Icon className="h-5 w-5 transition group-hover:text-[#1a2d68]" />
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="mx-auto h-px w-[90%] max-w-5xl bg-white/15 mt-12" />
-        <p className="py-6 text-xs text-center text-white/70">
-          &copy; {new Date().getFullYear()} OptiFind! Platform. Semua hak dilindungi undang-undang.
-        </p>
-      </div>
-      
-      {/* Testimonials cover */}
-      <div ref={coverRef} className="bg-white rounded-t-[48px]">
+    <section ref={sectionRef} className="relative h-screen" id="testimoni">
+      {/* Cover layer with testimonials - will slide up to reveal footer */}
+      <div ref={coverRef} className="cover relative min-h-screen bg-white rounded-t-[48px] shadow-2xl">
         <div className="mx-auto grid max-w-[1200px] gap-10 px-6 py-20 lg:grid-cols-[420px_1fr] lg:gap-16 w-full">
           <div className="flex flex-col gap-6">
             <div className="fade-up rounded-[32px] bg-gradient-to-br from-[#3d5086] to-[#2d3f6b] p-12 text-white shadow-2xl lg:-mt-20 lg:p-16 min-h-[400px] flex flex-col justify-center">
@@ -345,66 +349,6 @@ function TestimonialsWithFooterReveal() {
   );
 }
 
-function LandingFooter() {
-  const currentYear = new Date().getFullYear();
-
-  return (
-    <footer className="relative overflow-hidden bg-gradient-to-br from-[#1a2d68] via-[#1e3675] to-[#223f8a] pb-10 pt-16 text-white">
-      <div className="pointer-events-none absolute left-1/2 -top-14 h-24 w-[90%] -translate-x-1/2 rounded-full bg-white/15 blur-3xl" />
-      <div className="absolute inset-0 pointer-events-none opacity-30">
-        <div className="absolute bottom-0 w-40 h-40 rounded-full -left-32 bg-white/10 blur-2xl" />
-        <div className="absolute w-32 h-32 rounded-full right-12 top-4 bg-white/10 blur-2xl" />
-      </div>
-      <div className="relative flex flex-col w-full max-w-6xl gap-12 px-6 mx-auto md:flex-row md:items-start md:justify-between">
-        <div className="max-w-sm space-y-4">
-          <div className="flex items-center gap-1">
-            <Image src="/assets/magnifier.svg" alt="OptiFind" width={40} height={40} className="w-10 h-10" />
-            <p className="text-2xl font-semibold leading-tight">
-              <span className="text-white">pti</span>
-              <span className="text-[#f48b2f]">Find</span>
-            </p>
-          </div>
-          <p className="text-sm text-white/70">Teknologi yang Menyatukan Kepedulian.</p>
-        </div>
-
-        <div className="grid flex-1 gap-10 text-sm sm:grid-cols-[1fr] md:grid-cols-2 md:gap-16">
-          <div>
-            <p className="text-sm font-semibold tracking-wide text-white uppercase">Navigasi Cepat</p>
-            <ul className="mt-4 space-y-2 text-sm text-white/75">
-              {QUICK_LINKS.map((item) => (
-                <li key={item.label}>
-                  <Link href={item.href} className="transition hover:text-white">
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <p className="text-sm font-semibold tracking-wide text-white uppercase">Ikuti Kami</p>
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              {SOCIAL_LINKS.map(({ label, href, Icon }) => (
-                <Link
-                  key={label}
-                  href={href}
-                  aria-label={label}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white hover:text-[#1a2d68]"
-                >
-                  <Icon className="h-5 w-5 transition group-hover:text-[#1a2d68]" />
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="relative mx-auto mt-10 h-px w-[90%] max-w-5xl bg-white/15" />
-      <p className="mt-6 text-xs text-center text-white/70">&copy; {currentYear} OptiFind! Platform. Semua hak dilindungi undang-undang.</p>
-    </footer>
-  );
-}
-
 function StarIcon() {
   return (
     <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
@@ -415,32 +359,40 @@ function StarIcon() {
 
 function HeroSection() {
   return (
-    <section className="relative min-h-screen overflow-hidden hero-gradient">
-      <div className="relative z-[2] mx-auto flex min-h-[calc(100vh-120px)] max-w-[1200px] flex-col-reverse items-center justify-center gap-12 px-6 pb-16 pt-36 md:flex-row md:items-center md:justify-between md:px-12 lg:px-20">
-        <div className="max-w-xl text-center fade-up md:text-left">
-          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70 md:text-sm">PLATFORM OPTIFIND</p>
-          <h1 className="mt-6 text-[34px] font-bold leading-tight text-white md:text-[48px]">
-            Temukan Barangmu,<span className="text-[#f48b2f]"> Bantu Orang Lain Menemukan Miliknya</span>
+    <section className="relative h-screen overflow-hidden hero-gradient" data-hero>
+      <div className="relative z-[2] mx-auto flex h-full max-w-[1200px] flex-col-reverse items-center justify-center gap-12 px-6 pb-16 pt-36 md:flex-row md:items-center md:justify-between md:px-12 lg:px-20">
+        <div className="max-w-xl text-center md:text-left">
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70 md:text-sm" data-hero-subtitle>
+            PLATFORM OPTIFIND
+          </p>
+          <h1
+            className="mt-6 text-[34px] font-bold leading-tight text-white md:text-[48px]"
+            data-hero-headline
+          >
+            Temukan Barangmu,
+            <span className="text-[#f48b2f]"> Bantu Orang Lain Menemukan Miliknya</span>
           </h1>
-          <p className="mt-5 text-base text-white/85 md:text-lg">
+          <p className="mt-5 text-base text-white/85 md:text-lg" data-hero-copy>
             Platform untuk melapor dan menemukan barang hilang di sekitar Anda dengan pencarian pintar dan koneksi komunitas.
           </p>
           <div className="flex flex-col gap-3 mt-10 sm:flex-row sm:items-center">
             <Link
               href="/barangs/lapor-hilang"
               className="btn-glow inline-flex items-center justify-center rounded-[12px] bg-[#f48b2f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#dd7926] sm:min-w-[190px]"
+              data-hero-cta-primary
             >
               Laporkan Sekarang
             </Link>
             <Link
               href="/cari?tipe=Temuan"
               className="btn-glow inline-flex items-center justify-center rounded-[12px] border border-white/70 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-[#1d2d5a] sm:min-w-[200px]"
+              data-hero-cta-secondary
             >
               Lihat Barang Ditemukan
             </Link>
           </div>
         </div>
-        <div className="relative flex items-center justify-center w-full max-w-md md:max-w-lg">
+        <div className="relative flex items-center justify-center w-full max-w-md md:max-w-lg" data-hero-visual>
           <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#f48b2f]/40 via-transparent to-[#4b74d7]/40 blur-3xl" />
           <Image
             src="/assets/magnifier.svg"
@@ -505,7 +457,10 @@ function CommunityImpact() {
 
   return (
     <section id="dampak" className="h-screen overflow-hidden text-white section">
-      <div className="impact-bg sticky top-0 flex h-screen items-center bg-gradient-to-br from-[#203063] via-[#28407a] to-[#142253]">
+      <div
+        className="impact-bg sticky top-0 flex h-screen items-center bg-gradient-to-br from-[#203063] via-[#28407a] to-[#142253]"
+        data-impact-bg
+      >
         <div className="flex flex-col items-start w-full max-w-6xl gap-16 px-6 mx-auto md:flex-row md:items-center md:justify-between md:gap-24">
           <div data-step className="max-w-lg">
             <h2 className="text-5xl font-bold leading-tight md:text-6xl">
@@ -531,100 +486,6 @@ function CommunityImpact() {
                 <p className="mt-2 text-sm font-medium tracking-wide uppercase text-white/70 whitespace-nowrap">{stat.label}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Testimonials() {
-  return (
-    <section id="testimoni" className="relative py-20 bg-white rounded-b-[48px]">
-      <div className="mx-auto grid max-w-[1200px] gap-10 px-6 lg:grid-cols-[420px_1fr] lg:gap-16">
-        <div className="flex flex-col gap-6">
-          <div className="fade-up rounded-[32px] bg-gradient-to-br from-[#3d5086] to-[#2d3f6b] p-12 text-white shadow-2xl lg:-mt-20 lg:p-16 min-h-[400px] flex flex-col justify-center">
-            <div className="space-y-10">
-              <h2 className="text-5xl font-bold leading-tight">
-                Apa kata
-                <br />
-                mereka?
-              </h2>
-              <div className="flex items-center gap-4">
-                <div>
-                  <div className="flex items-center gap-1">
-                    <Image src="/assets/magnifier.svg" alt="OptiFind" width={32} height={32} className="w-8 h-8" />
-                    <span className="text-xl font-bold text-white">ptiFind</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="flex gap-1 text-yellow-300">
-                      <StarIcon />
-                      <StarIcon />
-                      <StarIcon />
-                      <StarIcon />
-                      <StarIcon />
-                    </span>
-                    <span className="text-lg font-semibold text-[#f48b2f]">4.8/5</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Feedback button now aligned vertically with blue container */}
-          <div className="flex justify-center lg:justify-start">
-            <Link
-              href="/feedback"
-              className="btn-glow inline-flex items-center justify-center rounded-[12px] bg-[#f48b2f] px-8 py-4 text-base font-bold text-white transition hover:bg-[#d67d3a] shadow-lg hover:shadow-xl w-full"
-            >
-              Beri Kami Feedback untuk Terus Berkembang
-            </Link>
-          </div>
-        </div>
-        <div className="space-y-6">
-          {TESTIMONIALS.map((item, index) => (
-            <article
-              key={item.name}
-              className={`fade-up rounded-[32px] bg-[#f8f9fa] px-10 py-8 shadow-lg transition hover:shadow-xl ${
-                index === 1 ? "fade-up-delay-1" : ""
-              }`}
-            >
-              <div className="flex items-start gap-5">
-                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#f48b2f] to-[#f5a85f] text-2xl font-bold text-white shadow-lg">
-                  {item.name.charAt(0)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-[#3d5086]">{item.name}</h3>
-                    <span className="flex gap-1 text-yellow-400">
-                      <StarIcon />
-                      <StarIcon />
-                      <StarIcon />
-                      <StarIcon />
-                      <StarIcon />
-                    </span>
-                  </div>
-                  <p className="mb-4 text-[15px] leading-relaxed text-[#5a5a5a]">{item.quote}</p>
-                  <p className="text-xs font-semibold text-[#8b8b8b]">{item.status}</p>
-                </div>
-              </div>
-            </article>
-          ))}
-          <div className="flex justify-end gap-4 pt-6">
-            <button
-              type="button"
-              className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#f48b2f] bg-white text-2xl text-[#f48b2f] transition hover:bg-[#f48b2f] hover:text-white shadow-lg"
-              aria-label="Sebelumnya"
-            >
-              &larr;
-            </button>
-            <button
-              type="button"
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f48b2f] text-2xl text-white transition hover:bg-[#d67d3a] shadow-xl"
-              aria-label="Selanjutnya"
-            >
-              &rarr;
-            </button>
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { uploadBarangPhoto } from "@/lib/supabase-storage";
 import { useAuth } from "@/lib/auth-context";
+import Skeleton from "@/components/skeleton";
 
 interface Kategori {
     id: number;
@@ -17,7 +18,7 @@ export default function LaporTemuanPage() {
     const [isLoadingKategoris, setIsLoadingKategoris] = useState(true);
     const [formData, setFormData] = useState({
         nama: "",
-        kategori: "",
+        kategoriId: 0,
         waktu: "",
         lokasi: "",
         deskripsi: "",
@@ -45,13 +46,8 @@ export default function LaporTemuanPage() {
         fetchKategoris();
     }, []);
 
-    // Check if user is logged in
-    useEffect(() => {
-        if (!authLoading && !user) {
-            alert("Anda harus login terlebih dahulu untuk melaporkan barang temuan.");
-            router.push("/login?callbackUrl=/barangs/lapor-temuan");
-        }
-    }, [user, authLoading, router]);
+    // Removed automatic alert + redirect on mount to avoid firing on each page refresh.
+    // Users will be prompted with a non-intrusive login CTA instead of an alert.
 
     const handleChange = (
         e: React.ChangeEvent<
@@ -59,7 +55,11 @@ export default function LaporTemuanPage() {
         >
     ) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        if (name === "kategoriId") {
+            setFormData((prev) => ({ ...prev, [name]: Number(value) }));
+        } else {
+            setFormData((prev) => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,7 +96,7 @@ export default function LaporTemuanPage() {
                 },
                 body: JSON.stringify({
                     nama: formData.nama,
-                    kategori: formData.kategori,
+                    kategoriId: formData.kategoriId,
                     waktu: formData.waktu,
                     lokasi: formData.lokasi,
                     deskripsi: formData.deskripsi,
@@ -142,30 +142,38 @@ export default function LaporTemuanPage() {
 
     // Show loading while checking auth
     if (authLoading || isLoadingKategoris) {
+        return <Skeleton />;
+    }
+
+    if (!user) {
+        // Show a friendly login prompt instead of redirecting immediately.
         return (
-            <section className="bg-[#f4f4f4] min-h-screen pt-20 sm:pt-28 md:pt-32 sm:pb-10 px-0 sm:px-4 md:px-[100px] font-poppins">
-                <div className="max-w-3xl mx-auto px-4">
-                    <div className="mb-8">
-                        <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
-                        <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
-                    </div>
-                    
-                    <div className="bg-white rounded-xl shadow-lg p-8 space-y-6">
-                        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                            <div key={i} className="space-y-2">
-                                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
-                                <div className="h-12 w-full bg-gray-200 rounded animate-pulse"></div>
-                            </div>
-                        ))}
-                        <div className="h-12 w-full bg-gray-200 rounded-lg animate-pulse mt-8"></div>
+            <section className="bg-[#f4f4f4] pt-8 sm:pt-12 pb-12 px-4 sm:px-8 md:px-[100px] font-poppins">
+                <div className="mx-auto max-w-[720px] rounded-[20px] bg-white p-8 text-center">
+                    <h2 className="mb-2 text-[22px] font-bold text-[#193a6f]">Silakan login</h2>
+                    <p className="mb-4 text-[15px] text-black">
+                        Anda harus login terlebih dahulu untuk mengakses formulir pelaporan.
+                        Tekan tombol di bawah untuk masuk — setelah login Anda akan dikembalikan ke halaman ini.
+                    </p>
+                    <div className="flex items-center justify-center gap-4">
+                        <button
+                            type="button"
+                            onClick={() => router.push("/login?callbackUrl=/barangs/lapor-temuan")}
+                            className="rounded-[10px] bg-[#f98125] px-6 py-2 font-bold text-white hover:bg-[#d96f1f]"
+                        >
+                            Login
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => router.push('/barangs')}
+                            className="rounded-[10px] border border-[#b0b0b0] px-6 py-2 font-medium text-[#1e1e1e] hover:bg-gray-50"
+                        >
+                            Kembali ke daftar
+                        </button>
                     </div>
                 </div>
             </section>
         );
-    }
-
-    if (!user) {
-        return null; // Will redirect in useEffect
     }
 
     return (
@@ -205,18 +213,18 @@ export default function LaporTemuanPage() {
                             Kategori
                         </label>
                         <select
-                            name="kategori"
-                            value={formData.kategori}
+                            name="kategoriId"
+                            value={formData.kategoriId}
                             onChange={handleChange}
                             required
                             disabled={isLoadingKategoris}
                             className="w-full border border-[#b0b0b0] rounded-[10px] px-4 py-2 mt-1 outline-none focus:border-blue-400 focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <option value="">
+                            <option value={0}>
                                 {isLoadingKategoris ? "Memuat kategori..." : "Pilih kategori"}
                             </option>
                             {kategoris.map((kat) => (
-                                <option key={kat.id} value={kat.nama}>
+                                <option key={kat.id} value={kat.id}>
                                     {kat.nama}
                                 </option>
                             ))}

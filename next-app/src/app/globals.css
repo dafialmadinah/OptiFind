@@ -27,6 +27,26 @@ body {
   padding: 0;
 }
 
+/* Smooth scrolling optimizations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hardware acceleration for animations */
+.section,
+[data-hero],
+[data-track],
+[data-card],
+[data-impact-bg],
+.cover,
+.fade-up {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
 #__next,
 body > div:first-child {
   min-height: 100vh;
@@ -58,19 +78,18 @@ a {
 .fade-up {
   opacity: 0;
   transform: translateY(24px);
-  animation: fadeUp 0.9s ease forwards;
 }
 
-.fade-up-delay-1 {
-  animation-delay: 0.15s;
-}
+/* Delays handled in GSAP hooks for better performance */
 
-.fade-up-delay-2 {
-  animation-delay: 0.3s;
-}
-
-.fade-up-delay-3 {
-  animation-delay: 0.45s;
+@media (prefers-reduced-motion: reduce) {
+  .fade-up,
+  .fade-up-delay-1,
+  .fade-up-delay-2,
+  .fade-up-delay-3 {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 .btn-glow {
