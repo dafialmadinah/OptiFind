@@ -1,26 +1,69 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { verify } from "jsonwebtoken";
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export function middleware(req: NextRequest) {
-  const token = req.cookies.get("token")?.value;
+export async function middleware(req: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  })
 
-  // Jika tidak ada token → redirect ke /login
-  if (!token) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          req.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          req.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: req.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  // If no user and trying to access protected route, redirect to login
+  if (!user) {
+    return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  try {
-    const secret = process.env.JWT_SECRET || "your-secret-key";
-    verify(token, secret); // jika tidak valid akan throw error
-    return NextResponse.next();
-  } catch (err) {
-    console.error("Invalid token:", err);
-    // Hapus cookie biar ga infinite redirect
-    const res = NextResponse.redirect(new URL("/login", req.url));
-    res.cookies.delete("token");
-    return res;
-  }
+  return response
 }
 
 export const config = {
