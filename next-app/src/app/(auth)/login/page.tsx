@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth-context";
+import Skeleton from "@/components/skeleton";
 
 // === Schema Validasi ===
 const loginSchema = z.object({
@@ -31,6 +32,13 @@ export default function LoginPage() {
     } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
 
     const [serverError, setServerError] = useState<string | null>(null);
+    const [ready, setReady] = useState(false);
+
+    useEffect(() => {
+        // show skeleton briefly to avoid layout shift on initial render
+        const t = setTimeout(() => setReady(true), 120);
+        return () => clearTimeout(t);
+    }, []);
 
     const onSubmit = handleSubmit(async (values) => {
         setServerError(null);
@@ -45,6 +53,8 @@ export default function LoginPage() {
             setError("password", { message });
         }
     });
+
+    if (!ready) return <Skeleton />;
 
     return (
         <div

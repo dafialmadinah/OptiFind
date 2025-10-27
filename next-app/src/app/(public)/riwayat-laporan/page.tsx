@@ -32,6 +32,7 @@ export default function RiwayatLaporanPage() {
         lokasi: "",
         urutkan: "",
     });
+    const [kategoris, setKategoris] = useState<{ id: number; nama: string }[]>([]);
 
     const isAuthenticated = !!user;
 
@@ -39,6 +40,7 @@ export default function RiwayatLaporanPage() {
         if (!authLoading) {
             if (isAuthenticated) {
                 fetchBarangs();
+                fetchKategoris();
             } else {
                 setLoading(false);
             }
@@ -48,6 +50,18 @@ export default function RiwayatLaporanPage() {
     useEffect(() => {
         applyFilters();
     }, [barangs, filters, activeTab]);
+
+    const fetchKategoris = async () => {
+        try {
+            const response = await fetch("/api/kategoris");
+            if (response.ok) {
+                const { data } = await response.json();
+                setKategoris(data || []);
+            }
+        } catch (error) {
+            console.error("Failed to fetch kategoris:", error);
+        }
+    };
 
     const fetchBarangs = async () => {
         try {
@@ -75,12 +89,12 @@ export default function RiwayatLaporanPage() {
             (barang) => barang?.tipe?.toLowerCase() === activeTab
         );
 
-        // Filter by kategori
+        // Filter by kategori - gunakan kategoriId langsung
         if (filters.kategori.length > 0) {
             filtered = filtered.filter(
                 (barang) =>
-                    barang.kategori &&
-                    filters.kategori.includes(barang.kategori.id)
+                    barang.kategoriId &&
+                    filters.kategori.includes(barang.kategoriId)
             );
         }
 
@@ -178,16 +192,25 @@ export default function RiwayatLaporanPage() {
         );
     };
 
+    const getKategoriNames = () => {
+        if (filters.kategori.length === 0) return "Semua Kategori";
+        const names = filters.kategori
+            .map(id => kategoris.find(k => k.id === id)?.nama)
+            .filter(Boolean);
+        return names.length > 0 ? names.join(", ") : "Semua Kategori";
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="container mx-auto px-4 max-w-7xl">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    <h1 className="text-xl font-semibold text-gray-900 mb-2">
                         Riwayat Laporan
                     </h1>
-                    <p className="text-gray-600">
-                        Kelola semua laporan barang hilang dan temuan Anda
+                    <p className="text-lg text-gray-700">
+                        Hasil untuk:{" "}
+                        <span className="text-blue-800 font-semibold">{getKategoriNames()}</span>
                     </p>
                 </div>
 
@@ -246,7 +269,7 @@ export default function RiwayatLaporanPage() {
                                 <div className="flex border-b border-gray-200">
                                     <button
                                         onClick={() => setActiveTab("temuan")}
-                                        className={`flex-1 px-6 py-4 text-center font-semibold transition-colors ${
+                                        className={`flex-1 px-6 py-3 text-center font-semibold transition-colors ${
                                             activeTab === "temuan"
                                                 ? "text-blue-700 border-b-2 border-blue-700 bg-blue-50"
                                                 : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
@@ -256,7 +279,7 @@ export default function RiwayatLaporanPage() {
                                     </button>
                                     <button
                                         onClick={() => setActiveTab("hilang")}
-                                        className={`flex-1 px-6 py-4 text-center font-semibold transition-colors ${
+                                        className={`flex-1 px-6 py-3 text-center font-semibold transition-colors ${
                                             activeTab === "hilang"
                                                 ? "text-blue-700 border-b-2 border-blue-700 bg-blue-50"
                                                 : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
@@ -308,43 +331,22 @@ export default function RiwayatLaporanPage() {
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {filteredBarangs.map((barang) =>
-                                        barang.statusId &&
-                                        isSelesai(handleStatusById(barang.statusId)) ? (
-                                            <BarangRiwayatCard
-                                                key={barang.id}
-                                                id={barang.id}
-                                                nama={barang.nama}
-                                                foto={barang.foto}
-                                                lokasi={barang.lokasi}
-                                                status={handleStatusById(barang.statusId)}
-                                                createdAt={barang.createdAt}
-                                                onEditLaporan={() =>
-                                                    handleEditLaporan(barang.id)
-                                                }
-                                            />
-                                        ) : (
-                                            barang.statusId && (
-                                                <BarangListCard
-                                                    key={barang.id}
-                                                    id={barang.id}
-                                                    nama={barang.nama}
-                                                    foto={barang.foto}
-                                                    lokasi={barang.lokasi}
-                                                    status={handleStatusById(
-                                                        barang.statusId ?? 1
-                                                    )}
-                                                    createdAt={barang.createdAt}
-                                                    showEditButton={true}
-                                                    onEdit={() =>
-                                                        handleEditLaporan(
-                                                            barang.id
-                                                        )
-                                                    }
-                                                />
-                                            )
-                                        )
-                                    )}
+                                    {filteredBarangs.map((barang) => (
+                                        <BarangRiwayatCard
+                                            key={barang.id}
+                                            id={barang.id}
+                                            nama={barang.nama}
+                                            foto={barang.foto}
+                                            lokasi={barang.lokasi}
+                                            status={handleStatusById(
+                                                barang.statusId ?? 1
+                                            )}
+                                            waktu={barang.waktu}
+                                            onEditLaporan={() =>
+                                                handleEditLaporan(barang.id)
+                                            }
+                                        />
+                                    ))}
                                 </div>
                             )}
                         </div>

@@ -16,7 +16,6 @@ export function GsapProvider({ children }: Props) {
     const lenis = new Lenis({
       duration: 1.2,
       smoothWheel: true,
-      smoothTouch: false,
       touchMultiplier: 1.2,
     });
 

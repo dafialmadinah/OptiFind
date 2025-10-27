@@ -8,6 +8,7 @@ import { z } from "zod";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import Skeleton from "@/components/skeleton";
 
 // === Schema Validasi ===
 const registerSchema = z.object({
@@ -23,6 +24,13 @@ export default function RegisterPage() {
   const router = useRouter();
   const { signIn } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
+
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 120);
+    return () => clearTimeout(t);
+  }, []);
 
   const {
     register,
@@ -88,6 +96,8 @@ export default function RegisterPage() {
       setServerError("Terjadi kesalahan saat register");
     }
   });
+
+  if (!ready) return <Skeleton />;
 
   return (
     <div

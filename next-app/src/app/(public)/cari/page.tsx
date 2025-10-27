@@ -12,7 +12,6 @@ import {
     type BarangWithRelations,
 } from "@/lib/barang-service";
 
-// Filter state
 interface FilterState {
     kategori: number[];
     waktu: string;
@@ -32,7 +31,6 @@ export default function CariPage() {
     const tipe = searchParams.get("tipe") ?? "temuan";
     const kategoriParam = searchParams.get("kategori");
 
-    // ✅ ubah ke BarangWithRelations
     const [barangs, setBarangs] = useState<BarangWithRelations[]>([]);
     const [filteredBarangs, setFilteredBarangs] = useState<
         BarangWithRelations[]
@@ -50,12 +48,11 @@ export default function CariPage() {
         fetchData();
     }, [query, tipe, kategoriParam]);
 
-    // Update filter state when kategori param changes
     useEffect(() => {
         if (kategoriParam) {
-            setFilters(prev => ({
+            setFilters((prev) => ({
                 ...prev,
-                kategori: [Number(kategoriParam)]
+                kategori: [Number(kategoriParam)],
             }));
         }
     }, [kategoriParam]);
@@ -73,7 +70,6 @@ export default function CariPage() {
                 getAllKategoris(),
             ]);
 
-            // ✅ hasil dari backend sudah BarangWithRelations
             setBarangs(barangRes || []);
             setKategoris(kategoriRes || []);
         } catch (error) {
@@ -86,7 +82,9 @@ export default function CariPage() {
 
     const getSearchTitle = () => {
         if (kategoriParam) {
-            const kategori = kategoris.find(k => k.id === Number(kategoriParam));
+            const kategori = kategoris.find(
+                (k) => k.id === Number(kategoriParam)
+            );
             return kategori ? `${kategori.nama}` : "Semua barang";
         }
         return query ? `"${query}"` : "Semua barang";
@@ -95,15 +93,12 @@ export default function CariPage() {
     const applyFilters = () => {
         let filtered = [...barangs];
 
-        // Filter kategori
         if (filters.kategori.length > 0) {
-            console.log(barangs)
             filtered = filtered.filter((barang) =>
                 filters.kategori.includes(barang?.kategoriId || 0)
             );
         }
 
-        // Filter lokasi
         if (filters.lokasi) {
             filtered = filtered.filter((barang) =>
                 barang.lokasi
@@ -112,7 +107,6 @@ export default function CariPage() {
             );
         }
 
-        // Filter waktu
         if (filters.waktu) {
             const now = new Date();
             filtered = filtered.filter((barang) => {
@@ -138,7 +132,6 @@ export default function CariPage() {
             });
         }
 
-        // Urutkan
         if (filters.urutkan) {
             filtered = [...filtered].sort((a, b) => {
                 switch (filters.urutkan) {
@@ -171,44 +164,41 @@ export default function CariPage() {
 
     const handleTabChange = (value: string) => {
         const params = new URLSearchParams();
-        params.set('tipe', value);
-        if (query) params.set('q', query);
-        if (kategoriParam) params.set('kategori', kategoriParam);
+        params.set("tipe", value);
+        if (query) params.set("q", query);
+        if (kategoriParam) params.set("kategori", kategoriParam);
         router.push(`/cari?${params.toString()}`);
     };
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="container mx-auto px-4 max-w-7xl">
-                <div className="mb-8">
-                    <h1 className="text-xl font-semibold text-gray-900 mb-2">
-                        Hasil cari untuk:{" "}
-                        <span className="text-blue-800">
-                            {getSearchTitle()}
-                        </span>
-                    </h1>
-                </div>
-
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    {/* Sidebar Filter */}
                     <div className="lg:col-span-1">
                         {loading ? (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6 animate-pulse">
                                 <div className="h-6 w-32 bg-gray-200 rounded"></div>
                                 <div className="space-y-3">
                                     {[1, 2, 3, 4].map((i) => (
-                                        <div key={i} className="h-8 w-full bg-gray-200 rounded"></div>
+                                        <div
+                                            key={i}
+                                            className="h-8 w-full bg-gray-200 rounded"
+                                        ></div>
                                     ))}
                                 </div>
                             </div>
                         ) : (
-                            <BarangFilter 
+                            <BarangFilter
                                 onFilterChange={handleFilterChange}
                                 initialFilters={filters}
                             />
                         )}
                     </div>
 
+                    {/* Main Content */}
                     <div className="lg:col-span-3 space-y-6">
+                        {/* Tabs */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                             <div className="flex border-b border-gray-200">
                                 {tipeTabs.map((tab) => (
@@ -217,7 +207,7 @@ export default function CariPage() {
                                         onClick={() =>
                                             handleTabChange(tab.value)
                                         }
-                                        className={`flex-1 px-6 py-4 text-center font-semibold transition-colors ${
+                                        className={`flex-1 px-6 py-3 text-center font-semibold transition-colors ${
                                             tipe === tab.value
                                                 ? "text-blue-700 border-b-2 border-blue-700 bg-blue-50"
                                                 : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
@@ -229,20 +219,25 @@ export default function CariPage() {
                             </div>
                         </div>
 
+                        {/* 🔽 Hasil Cari Ditaruh di Bawah Tabs */}
+                        <div>
+                            <h1 className="text-xl font-semibold text-gray-900 mb-2">
+                                Hasil cari untuk:{" "}
+                                <span className="text-blue-800">
+                                    {getSearchTitle()}
+                                </span>
+                            </h1>
+                        </div>
+
+                        {/* Grid Barang */}
                         {loading ? (
                             <div className="space-y-6">
-                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                                    <div className="flex border-b border-gray-200">
-                                        {[1, 2].map((i) => (
-                                            <div key={i} className="flex-1 px-6 py-4">
-                                                <div className="h-6 w-20 bg-gray-200 rounded animate-pulse mx-auto"></div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {[1, 2, 3, 4, 5, 6].map((i) => (
-                                        <div key={i} className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
+                                        <div
+                                            key={i}
+                                            className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse"
+                                        >
                                             <div className="aspect-square bg-gray-200"></div>
                                             <div className="p-4 space-y-2">
                                                 <div className="h-5 w-3/4 bg-gray-200 rounded"></div>
