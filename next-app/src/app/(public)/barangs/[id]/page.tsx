@@ -34,7 +34,7 @@ interface Barang {
     lokasi: string | null;
     deskripsi: string | null;
     kontak: string | null;
-    pelapor: { id: string; name: string } | null;
+    pelapor: { id: string; name: string; username?: string; email?: string } | null;
     createdAt: string;
 }
 
@@ -105,6 +105,31 @@ export default function BarangDetailPage({ params }: Props) {
                 return;
             }
             const data = await res.json();
+            console.log("=== BARANG DATA ===");
+            console.log("Full data:", JSON.stringify(data, null, 2));
+            console.log("Pelapor object:", data.pelapor);
+            console.log("Pelapor ID:", data.pelaporId);
+            
+            // If pelapor is null but pelaporId exists, fetch user data separately
+            if (!data.pelapor && data.pelaporId) {
+                console.log("Fetching user data separately for ID:", data.pelaporId);
+                try {
+                    const userRes = await fetch(`/api/users/${data.pelaporId}`);
+                    if (userRes.ok) {
+                        const userData = await userRes.json();
+                        console.log("Fetched user data:", userData);
+                        data.pelapor = {
+                            id: userData.id,
+                            name: userData.name,
+                            username: userData.username,
+                            email: userData.email
+                        };
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch user data:", error);
+                }
+            }
+            
             setBarang(data);
         } catch (error) {
             console.error("Error fetching barang:", error);
@@ -127,6 +152,18 @@ export default function BarangDetailPage({ params }: Props) {
 
     // Check if status is "selesai" (3 or 4)
     const isStatusSelesai = barang.statusId === 3 || barang.statusId === 4;
+
+    // Get pelapor name with fallback - check for empty strings too
+    const pelaporName = 
+        (barang.pelapor?.name && barang.pelapor.name.trim() !== "") ? barang.pelapor.name :
+        (barang.pelapor?.username && barang.pelapor.username.trim() !== "") ? barang.pelapor.username :
+        (barang.pelapor?.email && barang.pelapor.email.trim() !== "") ? barang.pelapor.email.split('@')[0] :
+        "Anonim";
+
+    console.log("Pelapor name:", barang.pelapor?.name);
+    console.log("Pelapor username:", barang.pelapor?.username);
+    console.log("Pelapor email:", barang.pelapor?.email);
+    console.log("Final pelaporName:", pelaporName);
 
     const waktuDitemukan = barang.waktu
         ? dayjs(barang.waktu).format("dddd, DD-MM-YYYY")
@@ -322,7 +359,7 @@ export default function BarangDetailPage({ params }: Props) {
                                         Nama Pelapor
                                     </p>
                                     <p className="text-base text-gray-800 mt-2">
-                                        {barang.pelapor?.name || "Anonim"}
+                                        {pelaporName}
                                     </p>
                                 </div>
                             </div>
