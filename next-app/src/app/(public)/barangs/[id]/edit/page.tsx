@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { uploadBarangPhoto } from "@/lib/supabase-storage";
 import { useAuth } from "@/lib/auth-context";
+import Skeleton from "@/components/skeleton";
+import { ConfirmationModal, SuccessModal, ErrorModal } from "@/components/modal";
 
 interface Kategori {
     id: number;
@@ -24,6 +26,18 @@ export default function EditBarangPage() {
     const [error, setError] = useState<string | null>(null);
     const [barangTipe, setBarangTipe] = useState<string>("");
     const [currentStatusId, setCurrentStatusId] = useState<number>(1);
+
+    // Modal states
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [modalData, setModalData] = useState({
+        title: "",
+        message: "",
+        onConfirm: () => {},
+        statusId: 0,
+        actionName: "",
+    });
 
     const [formData, setFormData] = useState({
         nama: "",
@@ -77,8 +91,15 @@ export default function EditBarangPage() {
                 });
             } catch (err) {
                 console.error(err);
-                alert("❌ Status barang tidak ditemukan.");
-                router.push("/barangs");
+                setModalData({
+                    title: "Barang Tidak Ditemukan",
+                    message: "Status barang tidak ditemukan atau terjadi kesalahan.",
+                    onConfirm: () => {},
+                    statusId: 0,
+                    actionName: "",
+                });
+                setShowErrorModal(true);
+                setTimeout(() => router.push("/barangs"), 2000);
             } finally {
                 setIsLoadingBarang(false);
             }
@@ -89,8 +110,15 @@ export default function EditBarangPage() {
     // Pastikan user login
     useEffect(() => {
         if (!authLoading && !user) {
-            alert("Anda harus login terlebih dahulu.");
-            router.push("/login?callbackUrl=/barangs");
+            setModalData({
+                title: "Belum Login",
+                message: "Anda harus login terlebih dahulu untuk mengedit barang.",
+                onConfirm: () => {},
+                statusId: 0,
+                actionName: "",
+            });
+            setShowErrorModal(true);
+            setTimeout(() => router.push("/login?callbackUrl=/barangs"), 2000);
         }
     }, [user, authLoading, router]);
 
@@ -117,8 +145,15 @@ export default function EditBarangPage() {
         setError(null);
 
         if (!user) {
-            alert("Anda harus login terlebih dahulu.");
-            router.push("/login");
+            setModalData({
+                title: "Belum Login",
+                message: "Anda harus login terlebih dahulu untuk menyimpan perubahan.",
+                onConfirm: () => {},
+                statusId: 0,
+                actionName: "",
+            });
+            setShowErrorModal(true);
+            setTimeout(() => router.push("/login"), 2000);
             return;
         }
 
@@ -154,9 +189,16 @@ export default function EditBarangPage() {
                 );
             }
 
-            alert("✅ Barang berhasil diperbarui!");
+            setModalData({
+                title: "Berhasil!",
+                message: "Barang berhasil diperbarui!",
+                onConfirm: () => {},
+                statusId: 0,
+                actionName: "",
+            });
+            setShowSuccessModal(true);
             // Tetap di halaman edit atau kembali ke riwayat
-            router.push("/riwayat-laporan");
+            setTimeout(() => router.push("/riwayat-laporan"), 1500);
         } catch (err) {
             const message =
                 err instanceof Error
@@ -164,17 +206,32 @@ export default function EditBarangPage() {
                     : "Terjadi kesalahan saat update";
             console.error(err);
             setError(message);
-            alert("❌ " + message);
+            setModalData({
+                title: "Gagal Menyimpan",
+                message: message,
+                onConfirm: () => {},
+                statusId: 0,
+                actionName: "",
+            });
+            setShowErrorModal(true);
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleUpdateStatus = async (newStatusId: number, actionName: string) => {
-        if (!confirm(`Apakah Anda yakin ingin mengubah status menjadi "${actionName}"?`)) {
-            return;
-        }
+        setModalData({
+            title: "Konfirmasi Perubahan Status",
+            message: `Apakah Anda yakin ingin mengubah status menjadi "${actionName}"?`,
+            onConfirm: () => confirmUpdateStatus(newStatusId, actionName),
+            statusId: newStatusId,
+            actionName: actionName,
+        });
+        setShowConfirmModal(true);
+    };
 
+    const confirmUpdateStatus = async (newStatusId: number, actionName: string) => {
+        setShowConfirmModal(false);
         setIsUpdatingStatus(true);
         try {
             const response = await fetch(`/api/barangs/${id}/status`, {
@@ -190,11 +247,29 @@ export default function EditBarangPage() {
             }
 
             setCurrentStatusId(newStatusId);
-            alert(`✅ Status berhasil diubah menjadi "${actionName}"!`);
-            router.push("/riwayat-laporan");
+            setModalData({
+                title: "Berhasil!",
+                message: `Status berhasil diubah menjadi "${actionName}"!`,
+                onConfirm: () => {},
+                statusId: 0,
+                actionName: "",
+            });
+            setShowSuccessModal(true);
+            
+            // Redirect after showing success modal
+            setTimeout(() => {
+                router.push("/riwayat-laporan");
+            }, 1500);
         } catch (error) {
             console.error("Error updating status:", error);
-            alert("❌ Gagal mengubah status. Silakan coba lagi.");
+            setModalData({
+                title: "Gagal Mengubah Status",
+                message: "Gagal mengubah status. Silakan coba lagi.",
+                onConfirm: () => {},
+                statusId: 0,
+                actionName: "",
+            });
+            setShowErrorModal(true);
         } finally {
             setIsUpdatingStatus(false);
         }
@@ -220,42 +295,7 @@ export default function EditBarangPage() {
     };
 
     if (authLoading || isLoadingBarang || isLoadingKategoris) {
-        return (
-            <section className="bg-[#f4f4f4] pt-8 sm:pt-12 pb-12 px-4 sm:px-8 md:px-[100px] font-poppins">
-                <div className="mx-auto max-w-[1232px] rounded-[20px] bg-white p-8">
-                    {/* Header Skeleton */}
-                    <div className="mb-6">
-                        <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
-                        <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
-                    </div>
-                    <hr className="mb-6 border-[#b0b0b0]" />
-
-                    {/* Form Skeleton */}
-                    <div className="space-y-6">
-                        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                            <div key={i} className="space-y-2">
-                                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
-                                <div className="h-12 w-full bg-gray-200 rounded-lg animate-pulse"></div>
-                            </div>
-                        ))}
-                        
-                        {/* Button Skeleton */}
-                        <div className="w-full sm:max-w-sm sm:mx-auto mt-8">
-                            <div className="h-12 w-full bg-gray-200 rounded-lg animate-pulse"></div>
-                        </div>
-                    </div>
-
-                    {/* Status Section Skeleton */}
-                    <div className="mt-8 pt-6 border-t border-gray-200">
-                        <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-4"></div>
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            <div className="flex-1 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
-                        </div>
-                        <div className="mt-3 h-4 w-full bg-gray-200 rounded animate-pulse"></div>
-                    </div>
-                </div>
-            </section>
-        );
+        return <Skeleton />;
     }
 
     return (
@@ -460,6 +500,38 @@ export default function EditBarangPage() {
                     </p>
                 </div>
             </div>
+
+            {/* Modals */}
+            <ConfirmationModal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={modalData.onConfirm}
+                title={modalData.title}
+                message={modalData.message}
+                confirmText="Ya, Ubah Status"
+                cancelText="Batal"
+                variant="warning"
+                isLoading={isUpdatingStatus}
+            />
+
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => {
+                    setShowSuccessModal(false);
+                    router.push("/riwayat-laporan");
+                }}
+                title={modalData.title}
+                message={modalData.message}
+                buttonText="OK"
+            />
+
+            <ErrorModal
+                isOpen={showErrorModal}
+                onClose={() => setShowErrorModal(false)}
+                title={modalData.title}
+                message={modalData.message}
+                buttonText="Tutup"
+            />
         </section>
     );
 }

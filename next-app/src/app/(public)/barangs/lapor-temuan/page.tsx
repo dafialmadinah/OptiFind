@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import Skeleton from "@/components/skeleton";
 import SelectCategory from "@/components/select-category";
 import MUIDateTimePicker from "@/components/MUIDateTimePicker";
+import { SuccessModal, ErrorModal } from "@/components/modal";
 
 interface Kategori {
     id: number;
@@ -29,6 +30,14 @@ export default function LaporTemuanPage() {
     });
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Modal states
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [modalData, setModalData] = useState({
+        title: "",
+        message: "",
+    });
 
     // Fetch kategoris from API
     useEffect(() => {
@@ -71,8 +80,12 @@ export default function LaporTemuanPage() {
         setError(null);
 
         if (!user) {
-            alert("Anda harus login terlebih dahulu.");
-            router.push("/login");
+            setModalData({
+                title: "Belum Login",
+                message: "Anda harus login terlebih dahulu untuk melaporkan barang temuan.",
+            });
+            setShowErrorModal(true);
+            setTimeout(() => router.push("/login"), 2000);
             return;
         }
 
@@ -106,8 +119,12 @@ export default function LaporTemuanPage() {
             });
 
             if (response.status === 401) {
-                alert("Sesi Anda telah berakhir. Silakan login kembali.");
-                router.push("/login");
+                setModalData({
+                    title: "Sesi Berakhir",
+                    message: "Sesi Anda telah berakhir. Silakan login kembali.",
+                });
+                setShowErrorModal(true);
+                setTimeout(() => router.push("/login"), 2000);
                 return;
             }
 
@@ -117,10 +134,14 @@ export default function LaporTemuanPage() {
             }
 
             const result = await response.json();
-
-            // Success! Redirect to barangs page
-            alert("✅ Laporan barang temuan berhasil dikirim!");
-            router.push("/barangs");
+            
+            // Success! Show modal then redirect
+            setModalData({
+                title: "Berhasil!",
+                message: "Laporan barang temuan berhasil dikirim!",
+            });
+            setShowSuccessModal(true);
+            setTimeout(() => router.push("/barangs"), 1500);
 
             // Reset file input
             const fileInput = document.querySelector(
@@ -134,7 +155,11 @@ export default function LaporTemuanPage() {
                     ? error.message
                     : "Terjadi kesalahan saat mengirim laporan";
             setError(errorMessage);
-            alert("❌ " + errorMessage);
+            setModalData({
+                title: "Gagal Mengirim Laporan",
+                message: errorMessage,
+            });
+            setShowErrorModal(true);
         } finally {
             setIsUploading(false);
         }
@@ -330,6 +355,22 @@ export default function LaporTemuanPage() {
                     </div>
                 </form>
             </div>
+
+            {/* Success Modal */}
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                title={modalData.title}
+                message={modalData.message}
+            />
+
+            {/* Error Modal */}
+            <ErrorModal
+                isOpen={showErrorModal}
+                onClose={() => setShowErrorModal(false)}
+                title={modalData.title}
+                message={modalData.message}
+            />
         </section>
     );
 }

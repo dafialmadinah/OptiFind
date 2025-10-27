@@ -10,6 +10,7 @@ export type PelaporSummary = {
   name: string | null;
   username: string | null;
   noTelepon: string | null;
+  email: string | null;
 } | null;
 
 export type BarangWithRelations = {
@@ -55,6 +56,7 @@ type SupabaseBarangRow = {
         name: string | null;
         username: string | null;
         no_telepon: string | null;
+        email: string | null;
       }[]
     | null;
 };
@@ -75,7 +77,7 @@ const barangSelect = `
   updated_at,
   kategori:kategori_id(id, nama),
   status:status_id(id, nama),
-  pelapor:pelapor_id(id, name, username, no_telepon)
+  pelapor:pelapor_id(id, name, username, no_telepon, email)
 `;
 
 // Map data dari Supabase ke bentuk BarangWithRelations
@@ -83,6 +85,9 @@ function mapBarang(row: SupabaseBarangRow): BarangWithRelations {
   const kategoriRel = row.kategori?.[0] ?? null;
   const statusRel = row.status?.[0] ?? null;
   const pelaporRel = row.pelapor?.[0] ?? null;
+
+  console.log("Raw pelapor data from Supabase:", row.pelapor);
+  console.log("Extracted pelaporRel:", pelaporRel);
 
   return {
     id: row.id,
@@ -106,6 +111,7 @@ function mapBarang(row: SupabaseBarangRow): BarangWithRelations {
           name: pelaporRel.name,
           username: pelaporRel.username,
           noTelepon: pelaporRel.no_telepon,
+          email: pelaporRel.email,
         }
       : null,
   };
@@ -154,13 +160,13 @@ export async function getBarangOverview() {
 
     const barangTemuan = sortByWaktuDesc(
       barangs.filter(
-        (barang) => barang.tipe === "temuan" && barang.statusId == 1
+        (barang) => barang.tipe === "temuan" && barang.statusId == 1 && barang.kategoriId != null
       )
     ).slice(0, 6);
 
     const barangHilang = sortByWaktuDesc(
       barangs.filter(
-        (barang) => barang.tipe === "hilang" && barang.statusId == 2
+        (barang) => barang.tipe === "hilang" && barang.statusId == 2 && barang.kategoriId != null
       )
     ).slice(0, 6);
 
@@ -229,6 +235,9 @@ export async function searchBarangs(params: SearchParams): Promise<BarangWithRel
     if (error) throw error;
 
     let items = mapBarangs(data ?? []);
+
+    // Filter out barangs without kategoriId (incomplete data)
+    items = items.filter((barang) => barang.kategoriId != null);
 
     // Search by keyword in nama, kategori, lokasi
     if (q) {
