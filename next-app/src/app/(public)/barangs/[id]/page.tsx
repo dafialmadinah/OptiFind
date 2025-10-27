@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Skeleton from "@/components/skeleton";
+import { useAuth } from "@/lib/auth-context";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import timezone from "dayjs/plugin/timezone";
@@ -88,6 +89,7 @@ function resolveImageSrc(foto: string | null) {
 
 export default function BarangDetailPage({ params }: Props) {
     const router = useRouter();
+    const { user } = useAuth();
     const [barang, setBarang] = useState<Barang | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -163,7 +165,14 @@ export default function BarangDetailPage({ params }: Props) {
                         </div>
                         {barang.kontak && (
                             <div className="w-full mt-6">
-                                {isStatusSelesai ? (
+                                {user?.id === barang.pelapor?.id ? (
+                                    <Link
+                                        href={`/barangs/${barang.id}/edit`}
+                                        className="block w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-3 rounded-xl text-center transition-colors shadow-md"
+                                    >
+                                        Edit Laporan
+                                    </Link>
+                                ) : isStatusSelesai ? (
                                     <button
                                         disabled
                                         className="block w-full bg-gray-300 text-gray-500 font-semibold py-3 rounded-xl text-center cursor-not-allowed shadow-md"
@@ -338,7 +347,14 @@ export default function BarangDetailPage({ params }: Props) {
 
                         {barang.kontak && (
                             <div className="lg:hidden pt-4">
-                                {isStatusSelesai ? (
+                                {user?.id === barang.pelapor?.id ? (
+                                    <Link
+                                        href={`/barangs/${barang.id}/edit`}
+                                        className="block w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-4 rounded-xl text-center transition-colors"
+                                    >
+                                        Edit Laporan
+                                    </Link>
+                                ) : isStatusSelesai ? (
                                     <button
                                         disabled
                                         className="block w-full bg-gray-300 text-gray-500 font-semibold py-4 rounded-xl text-center cursor-not-allowed"
