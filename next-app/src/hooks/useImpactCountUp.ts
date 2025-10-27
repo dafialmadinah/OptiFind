@@ -49,7 +49,7 @@ export function useImpactCountUp() {
       trigger: section,
       start: "top top",
       end: "+=100%",
-      scrub: 1,
+      scrub: 2, // Slower, smoother scrub matching other sections
       pin: true,
       anticipatePin: 1,
     });
@@ -62,8 +62,8 @@ export function useImpactCountUp() {
         if (bgElement) {
           gsap.to(bgElement, {
             yPercent: 0,
-            duration: 1.3,
-            ease: "power3.out"
+            duration: 1.4,
+            ease: "power2.out" // Smoother ease
           });
         }
       },
@@ -71,8 +71,8 @@ export function useImpactCountUp() {
         if (bgElement) {
           gsap.to(bgElement, {
             yPercent: -140,
-            duration: 0.7,
-            ease: "power3.in"
+            duration: 0.8,
+            ease: "power2.in" // Smoother ease
           });
         }
       }
@@ -86,9 +86,9 @@ export function useImpactCountUp() {
         gsap.to(steps, {
           autoAlpha: 1,
           y: 0,
-          duration: 1,
-          ease: "power3.out",
-          stagger: 0.3,
+          duration: 1.2,
+          ease: "power2.out", // Smoother ease
+          stagger: 0.25,
           delay: 0.2
         });
         
@@ -96,9 +96,9 @@ export function useImpactCountUp() {
         gsap.to(iconCircles, {
           x: 0,
           autoAlpha: 1,
-          duration: 0.8,
-          ease: "power3.out",
-          stagger: 0.2,
+          duration: 1,
+          ease: "power2.out", // Smoother ease
+          stagger: 0.15,
           delay: 0.5
         });
       },
@@ -106,8 +106,8 @@ export function useImpactCountUp() {
         gsap.to(steps, {
           autoAlpha: 0,
           y: 24,
-          duration: 0.6,
-          ease: "power3.in",
+          duration: 0.7,
+          ease: "power2.in", // Smoother ease
           stagger: 0.1
         });
         
@@ -115,8 +115,8 @@ export function useImpactCountUp() {
         gsap.to(iconCircles, {
           x: 100,
           autoAlpha: 0,
-          duration: 0.4,
-          ease: "power3.in",
+          duration: 0.5,
+          ease: "power2.in", // Smoother ease
           stagger: 0.1
         });
       }

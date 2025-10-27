@@ -41,13 +41,13 @@ export function useMorphingHowItWorks() {
     // Reveal the section right before creating the timeline
     section.classList.remove("section-hidden");
 
-    // Create main timeline with pinning
+    // Create main timeline with pinning - smoother scrub
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: section,
         start: "top top",
         end: "+=400%", // 4 stages
-        scrub: 1.2, // Slightly slower scrub for smoother animation
+        scrub: 2, // Slower, smoother scrub for more fluid transitions
         pin: true,
         anticipatePin: 1,
       },
@@ -64,7 +64,7 @@ export function useMorphingHowItWorks() {
         backgroundColor: "#f48b2f",
         color: "#ffffff",
         duration: 1,
-        ease: "power2.out",
+        ease: "power1.inOut", // Consistent smooth ease
       },
       0
     );
@@ -77,7 +77,7 @@ export function useMorphingHowItWorks() {
         backgroundColor: "#ffffff",
         color: "#1d1d1d",
         duration: 1,
-        ease: "power2.inOut",
+        ease: "power1.inOut", // Consistent smooth ease
       },
       1
     ).to(
@@ -90,7 +90,7 @@ export function useMorphingHowItWorks() {
         backgroundColor: "#f48b2f",
         color: "#ffffff",
         duration: 1,
-        ease: "power2.out",
+        ease: "power1.inOut", // Consistent smooth ease
       },
       1
     );
@@ -101,7 +101,7 @@ export function useMorphingHowItWorks() {
       {
         flex: "1 1 31%",
         duration: 1,
-        ease: "power2.inOut",
+        ease: "power1.inOut", // Consistent smooth ease
       },
       2
     )
@@ -112,7 +112,7 @@ export function useMorphingHowItWorks() {
         backgroundColor: "#ffffff",
         color: "#1d1d1d",
         duration: 1,
-        ease: "power2.inOut",
+        ease: "power1.inOut", // Consistent smooth ease
       },
       2
     )
@@ -126,7 +126,7 @@ export function useMorphingHowItWorks() {
         backgroundColor: "#f48b2f",
         color: "#ffffff",
         duration: 1,
-        ease: "power2.out",
+        ease: "power1.inOut", // Consistent smooth ease
       },
       2
     );
@@ -139,7 +139,7 @@ export function useMorphingHowItWorks() {
         backgroundColor: "#ffffff",
         color: "#1d1d1d",
         duration: 1,
-        ease: "power2.inOut",
+        ease: "power1.inOut", // Consistent smooth ease
       },
       3
     );
