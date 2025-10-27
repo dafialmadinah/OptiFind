@@ -56,20 +56,20 @@ export async function PUT(request: NextRequest, { params }: Params) {
         );
     }
 
-    if (!barang.status) {
+    if (!barang.statusId) {
         return NextResponse.json(
             { message: "Status barang tidak ditemukan." },
             { status: 400 }
         );
     }
 
-    const statusNama = barang.status.nama.toLowerCase();
-    let statusTarget: string | null = null;
+    const statusId = barang.statusId;
+    let statusTarget: number | null = null;
 
-    if (statusNama.includes("belum ditemukan")) {
-        statusTarget = "Sudah Ditemukan";
-    } else if (statusNama.includes("belum dikembalikan")) {
-        statusTarget = "Sudah Dikembalikan";
+    if (statusId == 1) {
+        statusTarget = 3;
+    } else if (statusId == 2) {
+        statusTarget = 4;
     } else {
         return NextResponse.json(
             { message: "Laporan sudah dalam status selesai." },
@@ -92,17 +92,10 @@ export async function PUT(request: NextRequest, { params }: Params) {
         );
     }
 
-    if (!statusBaru) {
-        return NextResponse.json(
-            { message: "Status tujuan tidak ditemukan." },
-            { status: 500 }
-        );
-    }
-
     // update status barang
     const { error: updateError } = await supabase
         .from("barangs")
-        .update({ status_id: statusBaru.id })
+        .update({ status_id: statusTarget })
         .eq("id", barangId);
 
     if (updateError) {
