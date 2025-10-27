@@ -365,9 +365,9 @@ function TestimonialsWithFooterReveal() {
   useCurtainTestimonials(coverRef);
 
   return (
-    <section ref={sectionRef} className="relative py-20 sm:py-24 md:h-screen md:py-0" id="testimoni">
+    <section ref={sectionRef} className="relative md:h-screen" id="testimoni">
       {/* Cover layer with testimonials - will slide up to reveal footer */}
-      <div ref={coverRef} className="cover relative w-full overflow-hidden bg-white shadow-2xl min-h-screen">
+      <div ref={coverRef} className="relative w-full min-h-screen overflow-hidden bg-white shadow-2xl cover">
         <div className="relative z-10 mx-auto grid w-full max-w-[1200px] gap-10 px-5 py-14 sm:px-6 sm:py-16 md:px-10 md:py-20 lg:grid-cols-[420px_1fr] lg:gap-16">
           <div className="flex flex-col gap-6">
             {/* Card "Apa kata mereka" - background biru turun seperti curtain */}
@@ -593,7 +593,7 @@ function CommunityImpact() {
   useImpactCountUp();
 
   return (
-    <section id="dampak" className="section relative overflow-hidden text-white min-h-screen">
+    <section id="dampak" className="relative min-h-screen overflow-hidden text-white section">
       <div className="md:sticky md:top-0 md:h-screen md:flex md:items-center">
         <div
           className="impact-bg w-full flex items-center bg-gradient-to-br from-[#203063] via-[#28407a] to-[#142253] will-change-transform min-h-screen md:h-screen"
