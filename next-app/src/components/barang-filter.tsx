@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface FilterProps {
   onFilterChange?: (filters: FilterState) => void;
+  initialFilters?: FilterState;
 }
 
 interface FilterState {
@@ -26,7 +27,7 @@ const categories = [
   { id: 10, name: 'Lainnya' },
 ];
 
-export function BarangFilter({ onFilterChange }: FilterProps) {
+export function BarangFilter({ onFilterChange, initialFilters }: FilterProps) {
   const [expandedSections, setExpandedSections] = useState({
     kategori: true,
     waktu: false,
@@ -34,12 +35,21 @@ export function BarangFilter({ onFilterChange }: FilterProps) {
     urutkan: false,
   });
 
-  const [filters, setFilters] = useState<FilterState>({
-    kategori: [],
-    waktu: '',
-    lokasi: '',
-    urutkan: '',
-  });
+  const [filters, setFilters] = useState<FilterState>(
+    initialFilters || {
+      kategori: [],
+      waktu: '',
+      lokasi: '',
+      urutkan: '',
+    }
+  );
+
+  // Update filters when initialFilters change
+  useEffect(() => {
+    if (initialFilters) {
+      setFilters(initialFilters);
+    }
+  }, [initialFilters]);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({

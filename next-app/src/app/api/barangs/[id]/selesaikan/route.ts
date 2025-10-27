@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { getBarangById } from "@/lib/barang-service";
-import { getAuthUser } from "@/lib/auth-utils";
+import { getSupabaseUser } from "@/lib/supabase-server";
 
 type Params = {
     params: { id: string };
@@ -16,7 +16,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
         );
     }
 
-    const user = getAuthUser(request);
+    const user = await getSupabaseUser(request);
     if (!user) {
         return NextResponse.json({ message: "Unauthorised" }, { status: 401 });
     }
@@ -36,13 +36,29 @@ export async function PUT(request: NextRequest, { params }: Params) {
         );
     }
 
-    const userId = user.id;
-    const isAdmin = user.role === "ADMIN";
+    const userId = user.id; // UUID string from Supabase Auth
+    
+    // Get user role from database
+    const { data: userData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", userId)
+        .single();
+    
+    const isAdmin = userData?.role === "ADMIN";
 
+    // Compare UUID strings
     if (!isAdmin && barang.pelaporId !== userId) {
         return NextResponse.json(
             { message: "Anda tidak memiliki akses." },
             { status: 403 }
+        );
+    }
+
+    if (!barang.status) {
+        return NextResponse.json(
+            { message: "Status barang tidak ditemukan." },
+            { status: 400 }
         );
     }
 

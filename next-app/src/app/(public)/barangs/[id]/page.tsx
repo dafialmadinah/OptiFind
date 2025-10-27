@@ -25,12 +25,12 @@ interface Barang {
     foto: string | null;
     kategori: { id: number; nama: string };
     status: { id: number; nama: string };
-    tipe: { id: number; nama: string };
+    tipe: string; // "hilang" or "temuan"
     waktu: string | null;
     lokasi: string | null;
     deskripsi: string | null;
     kontak: string | null;
-    pelapor: { id: number; name: string } | null;
+    pelapor: { id: string; name: string } | null; // UUID
     createdAt: string;
 }
 
@@ -76,13 +76,13 @@ export default function BarangDetailPage({ params }: Props) {
                 foto: "/assets/kunci.svg",
                 kategori: { id: 2, nama: "Aksesoris & Kunci" },
                 status: { id: 1, nama: "Belum dikembalikan" },
-                tipe: { id: 1, nama: "Temuan" },
+                tipe: "temuan", // Changed to string
                 waktu: "2025-10-20T10:00:00Z",
                 lokasi: "Parkiran Teknik UB",
                 deskripsi:
                     "Kunci motor ditemukan di area parkiran dekat gedung utama. Ada gantungan warna merah.",
                 kontak: "085123456789",
-                pelapor: { id: 1, name: "Rhesa Tsaqif" },
+                pelapor: { id: "550e8400-e29b-41d4-a716-446655440000", name: "Rhesa Tsaqif" }, // UUID
                 createdAt: "2025-10-21T08:30:00Z",
             };
 
@@ -98,18 +98,50 @@ export default function BarangDetailPage({ params }: Props) {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">
-                        Memuat detail barang...
-                    </p>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4 max-w-4xl">
+          {/* Breadcrumb Skeleton */}
+          <div className="mb-6 flex items-center gap-2">
+            <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
+              {/* Image Skeleton */}
+              <div className="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
+
+              {/* Info Skeleton */}
+              <div className="space-y-4">
+                <div className="h-8 w-3/4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse"></div>
+                
+                <div className="space-y-3 pt-4">
+                  <div className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-2/3 bg-gray-200 rounded animate-pulse"></div>
                 </div>
+
+                <div className="space-y-2 pt-4">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex gap-2">
+                      <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="h-12 w-full bg-gray-200 rounded-lg animate-pulse mt-6"></div>
+              </div>
             </div>
-        );
-    }
+          </div>
+        </div>
+      </div>
+    );
+  }
 
     if (!barang) {
         return null;
@@ -178,7 +210,7 @@ export default function BarangDetailPage({ params }: Props) {
                                 {barang.nama}
                             </h1>
                             <p className="text-lg font-semibold text-gray-500">
-                                {barang.tipe.nama}
+                                {barang.tipe.charAt(0).toUpperCase() + barang.tipe.slice(1)}
                             </p>
                         </div>
 

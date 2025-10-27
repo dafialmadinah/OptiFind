@@ -12,17 +12,10 @@ export function PublicNavbar() {
 
     const [searchQuery, setSearchQuery] = useState("");
     const [menuOpen, setMenuOpen] = useState(false);
+    const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const [laporOpen, setLaporOpen] = useState(false);
-    const [showConfirmLogout, setShowConfirmLogout] = useState(false);
     const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
-
-    // otomatis sembunyikan popup logout setelah 3 detik
-    useEffect(() => {
-        if (showConfirmLogout) {
-            const timeout = setTimeout(() => setShowConfirmLogout(false), 2000);
-            return () => clearTimeout(timeout);
-        }
-    }, [showConfirmLogout]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,8 +24,20 @@ export function PublicNavbar() {
         }
     };
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setProfileDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     const handleLogout = async () => {
-        setShowConfirmLogout(false);
+        setProfileDropdownOpen(false);
         await authSignOut();
         router.push("/");
     };
@@ -60,6 +65,13 @@ export function PublicNavbar() {
                     <div className="flex-1 max-w-2xl mx-4">
                         <form onSubmit={handleSearch}>
                             <div className="relative">
+                                <Image
+                                    src="/assets/cari.svg"
+                                    alt="Search"
+                                    width={18}
+                                    height={18}
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 z-10 opacity-50"
+                                />
                                 <input
                                     type="text"
                                     placeholder="Cari barang"
@@ -161,45 +173,59 @@ export function PublicNavbar() {
 
                         {/* Akun / Logout */}
                         {user ? (
-                            <div className="relative">
+                            <div className="relative" ref={dropdownRef}>
                                 <button
-                                    onClick={() =>
-                                        setShowConfirmLogout(!showConfirmLogout)
-                                    }
-                                    className="text-white hover:text-blue-200 transition-colors font-medium whitespace-nowrap"
+                                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                                    className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors"
+                                    aria-label="Profile menu"
                                 >
-                                    Keluar
+                                    <svg
+                                        className="w-6 h-6"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                        />
+                                    </svg>
                                 </button>
 
-                                <div
-                                    className={`absolute right-0 mt-2 bg-white text-gray-800 rounded-lg shadow-lg border border-gray-200 py-3 px-4 z-50
-                                    transition-all duration-300 ease-out
-                                    ${
-                                        showConfirmLogout
-                                            ? "opacity-100 translate-y-0 scale-100"
-                                            : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
-                                    }`}
-                                >
-                                    <p className="text-sm mb-3 text-center">
-                                        Yakin ingin keluar?
-                                    </p>
-                                    <div className="flex justify-center gap-3">
-                                        <button
-                                            onClick={() =>
-                                                setShowConfirmLogout(false)
-                                            }
-                                            className="px-4 py-1.5 text-sm rounded-md bg-gray-200 hover:bg-gray-300 transition"
-                                        >
-                                            Batal
-                                        </button>
+                                {/* Dropdown Menu */}
+                                {profileDropdownOpen && (
+                                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 z-50">
+                                        <div className="px-4 py-3 border-b border-gray-200">
+                                            <p className="text-sm font-medium text-gray-900">
+                                                {user.user_metadata?.name || "User"}
+                                            </p>
+                                            <p className="text-xs text-gray-500 truncate">
+                                                {user.email}
+                                            </p>
+                                        </div>
                                         <button
                                             onClick={handleLogout}
-                                            className="px-6 py-1.5 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+                                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 font-medium"
                                         >
-                                            Ya
+                                            <svg
+                                                className="w-4 h-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                                />
+                                            </svg>
+                                            Keluar
                                         </button>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         ) : (
                             <Link
@@ -301,44 +327,24 @@ export function PublicNavbar() {
                             {user ? (
                                 <>
                                     <button
-                                        onClick={() =>
-                                            setShowConfirmLogout(
-                                                !showConfirmLogout
-                                            )
-                                        }
-                                        className="text-white hover:text-blue-200 transition-colors font-medium text-left py-2"
+                                        onClick={handleLogout}
+                                        className="text-red-600 hover:text-red-700 transition-colors font-medium text-left py-2 flex items-center gap-2"
                                     >
+                                        <svg
+                                            className="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                            />
+                                        </svg>
                                         Keluar
                                     </button>
-
-                                    <div
-                                        className={`mt-2 bg-white text-gray-800 rounded-lg shadow-lg border border-gray-200 w-full py-3 px-4 transition-all duration-300 ease-out
-                                        ${
-                                            showConfirmLogout
-                                                ? "opacity-100 translate-y-0 scale-100"
-                                                : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
-                                        }`}
-                                    >
-                                        <p className="text-sm mb-3 text-center">
-                                            Yakin ingin keluar?
-                                        </p>
-                                        <div className="flex justify-center gap-3">
-                                            <button
-                                                onClick={() =>
-                                                    setShowConfirmLogout(false)
-                                                }
-                                                className="px-3 py-1.5 text-sm rounded-md bg-gray-200 hover:bg-gray-300 transition"
-                                            >
-                                                Batal
-                                            </button>
-                                            <button
-                                                onClick={handleLogout}
-                                                className="px-3 py-1.5 text-sm rounded-md bg-red-600 text-white hover:bg-red-700 transition"
-                                            >
-                                                Ya, Keluar
-                                            </button>
-                                        </div>
-                                    </div>
                                 </>
                             ) : (
                                 <Link

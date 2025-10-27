@@ -8,6 +8,11 @@ const nextConfig = {
       { protocol: "https", hostname: "down-id.img.susercontent.com" },
       { protocol: "https", hostname: "img.lazcdn.com" },
       { protocol: "https", hostname: "images.unsplash.com" },
+      { 
+        protocol: "https", 
+        hostname: "jnxhvmncwomyzaociyjh.supabase.co", 
+        pathname: "/storage/v1/object/public/**"
+      },
     ],
   },
   experimental: {

@@ -8,18 +8,7 @@ import Link from 'next/link';
 import { BarangFilter } from '@/components/barang-filter';
 import { BarangListCard } from '@/components/barang/barang-list-card';
 import { BarangRiwayatCard } from '@/components/barang/barang-riwayat-card';
-
-interface Barang {
-  id: number;
-  nama: string;
-  foto: string | null;
-  lokasi: string | null;
-  status: { id: number; nama: string };
-  tipe: { id: number; nama: string };
-  kategori: { id: number; nama: string };
-  createdAt: string;
-  pelapor?: { id: number; name: string } | null;
-}
+import type { BarangWithRelations } from '@/lib/barang-service';
 
 interface FilterState {
   kategori: number[];
@@ -32,8 +21,8 @@ export default function RiwayatLaporanPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'temuan' | 'hilang'>('temuan');
-  const [barangs, setBarangs] = useState<Barang[]>([]);
-  const [filteredBarangs, setFilteredBarangs] = useState<Barang[]>([]);
+  const [barangs, setBarangs] = useState<BarangWithRelations[]>([]);
+  const [filteredBarangs, setFilteredBarangs] = useState<BarangWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<FilterState>({
     kategori: [],
@@ -60,7 +49,8 @@ export default function RiwayatLaporanPage() {
 
   const fetchBarangs = async () => {
     try {
-      const response = await fetch('/api/barangs');
+      // Add myBarangs=true to fetch only user's barangs
+      const response = await fetch('/api/barangs?myBarangs=true');
 
       if (!response.ok) {
         throw new Error('Failed to fetch barangs');
@@ -79,13 +69,13 @@ export default function RiwayatLaporanPage() {
 
   const applyFilters = () => {
     let filtered = barangs.filter((barang) => 
-      barang.tipe.nama.toLowerCase() === activeTab
+      barang?.tipe?.toLowerCase() === activeTab
     );
 
     // Filter by kategori
     if (filters.kategori.length > 0) {
       filtered = filtered.filter((barang) =>
-        filters.kategori.includes(barang.kategori.id)
+        barang.kategori && filters.kategori.includes(barang.kategori.id)
       );
     }
 
@@ -187,7 +177,21 @@ export default function RiwayatLaporanPage() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar Filter */}
           <div className="lg:col-span-1">
-            <BarangFilter onFilterChange={handleFilterChange} />
+            {loading ? (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6 animate-pulse">
+                <div className="h-6 w-32 bg-gray-200 rounded"></div>
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-8 w-full bg-gray-200 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <BarangFilter 
+                onFilterChange={handleFilterChange}
+                initialFilters={filters}
+              />
+            )}
           </div>
 
           {/* Main Content */}
@@ -220,9 +224,23 @@ export default function RiwayatLaporanPage() {
 
             {/* Barang List */}
             {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Memuat data...</p>
+              <div className="space-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+                    <div className="flex gap-4">
+                      <div className="w-24 h-24 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                      <div className="flex-1 space-y-3">
+                        <div className="h-6 w-3/4 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-1/2 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-1/3 bg-gray-200 rounded"></div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <div className="h-10 w-24 bg-gray-200 rounded"></div>
+                        <div className="h-10 w-24 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : filteredBarangs.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
@@ -240,7 +258,7 @@ export default function RiwayatLaporanPage() {
             ) : (
               <div className="space-y-4">
                 {filteredBarangs.map((barang) =>
-                  isSelesai(barang.status.nama) ? (
+                  barang.status && isSelesai(barang.status.nama) ? (
                     <BarangRiwayatCard
                       key={barang.id}
                       id={barang.id}
@@ -252,17 +270,19 @@ export default function RiwayatLaporanPage() {
                       onEditLaporan={() => handleEditLaporan(barang.id)}
                     />
                   ) : (
-                    <BarangListCard
-                      key={barang.id}
-                      id={barang.id}
-                      nama={barang.nama}
-                      foto={barang.foto}
-                      lokasi={barang.lokasi}
-                      status={barang.status.nama}
-                      createdAt={barang.createdAt}
+                    barang.status && (
+                      <BarangListCard
+                        key={barang.id}
+                        id={barang.id}
+                        nama={barang.nama}
+                        foto={barang.foto}
+                        lokasi={barang.lokasi}
+                        status={barang.status.nama}
+                        createdAt={barang.createdAt}
                       showEditButton={true}
                       onEdit={() => handleEditLaporan(barang.id)}
                     />
+                    )
                   )
                 )}
               </div>

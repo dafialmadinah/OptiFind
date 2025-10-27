@@ -8,56 +8,51 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/id";
 import { CategoryCard } from "@/components/category-card";
 import { BannerCard } from "@/components/banner-card";
+import { getBarangOverview, type BarangWithRelations, type Kategori } from "@/lib/barang-service";
 
 dayjs.extend(relativeTime);
 dayjs.locale("id");
 
-const categories = [
-    { id: 1, name: "Dompet", icon: "/assets/dompet.svg" },
-    { id: 2, name: "Kunci", icon: "/assets/kunci.svg" },
-    { id: 3, name: "Aksesoris", icon: "/assets/aksesoris.svg" },
-    { id: 4, name: "Smartphone", icon: "/assets/smartphone.svg" },
-    { id: 5, name: "Elektronik", icon: "/assets/elektronik.svg" },
-    { id: 6, name: "Botol", icon: "/assets/botol minum.svg" },
-    { id: 7, name: "Alat Tulis", icon: "/assets/alat tulis.svg" },
-    { id: 8, name: "Pakaian", icon: "/assets/pakaian.svg" },
-    { id: 9, name: "Dokumen", icon: "/assets/dokumen.svg" },
-    { id: 10, name: "Lainnya", icon: "/assets/lainnya.svg" },
-];
+// Icon mapping for categories (fallback to default icon if not found)
+const categoryIcons: Record<string, string> = {
+    "Dompet": "/assets/dompet.svg",
+    "Kunci": "/assets/kunci.svg",
+    "Aksesoris": "/assets/aksesoris.svg",
+    "Smartphone": "/assets/smartphone.svg",
+    "Elektronik": "/assets/elektronik.svg",
+    "Botol": "/assets/botol minum.svg",
+    "Alat Tulis": "/assets/alat tulis.svg",
+    "Pakaian": "/assets/pakaian.svg",
+    "Dokumen": "/assets/dokumen.svg",
+    "Lainnya": "/assets/lainnya.svg",
+};
 
-interface Barang {
-    id: number;
-    nama: string;
-    lokasi: string | null;
-    foto: string | null;
-    createdAt: string;
-}
+const getCategoryIcon = (categoryName: string): string => {
+    return categoryIcons[categoryName] || "/assets/lainnya.svg";
+};
 
 export default function HomePage() {
     const [searchQuery, setSearchQuery] = useState("");
-    const [barangTemuan, setBarangTemuan] = useState<Barang[]>([]);
-    const [barangHilang, setBarangHilang] = useState<Barang[]>([]);
+    const [barangTemuan, setBarangTemuan] = useState<BarangWithRelations[]>([]);
+    const [barangHilang, setBarangHilang] = useState<BarangWithRelations[]>([]);
+    const [kategoris, setKategoris] = useState<Kategori[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchBarangs();
+        fetchData();
     }, []);
 
-    const fetchBarangs = async () => {
+    const fetchData = async () => {
         try {
             setLoading(true);
-
-            // Fetch barang temuan
-            const temuanRes = await fetch("/api/barangs?tipe=temuan");
-            const temuanData = await temuanRes.json();
-            setBarangTemuan(temuanData.data.slice(0, 6));
-
-            // Fetch barang hilang
-            const hilangRes = await fetch("/api/barangs?tipe=hilang");
-            const hilangData = await hilangRes.json();
-            setBarangHilang(hilangData.data.slice(0, 6));
+            const overview = await getBarangOverview();
+            console.log(overview)
+            
+            setBarangTemuan(overview.barangTemuan);
+            setBarangHilang(overview.barangHilang);
+            setKategoris(overview.kategoris);
         } catch (error) {
-            console.error("Error fetching barangs:", error);
+            console.error("Error fetching data:", error);
         } finally {
             setLoading(false);
         }
@@ -66,13 +61,11 @@ export default function HomePage() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            window.location.href = `/barangs-list?q=${encodeURIComponent(
-                searchQuery
-            )}`;
+            window.location.href = `/cari?q=${encodeURIComponent(searchQuery)}`;
         }
     };
 
-    const BarangCard = ({ barang }: { barang: Barang }) => (
+    const BarangCard = ({ barang }: { barang: BarangWithRelations }) => (
         <Link href={`/barangs/${barang.id}`}>
             <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer">
                 <div className="aspect-square bg-gray-100 flex items-center justify-center relative">
@@ -151,14 +144,23 @@ export default function HomePage() {
                         Kategori Barang
                     </h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-3">
-                        {categories.map((category) => (
-                            <CategoryCard
-                                key={category.id}
-                                id={category.id}
-                                name={category.name}
-                                icon={category.icon}
-                            />
-                        ))}
+                        {loading ? (
+                            Array.from({ length: 10 }).map((_, i) => (
+                                <div key={i} className="bg-white rounded-xl shadow-sm p-4 animate-pulse">
+                                    <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-2" />
+                                    <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto" />
+                                </div>
+                            ))
+                        ) : (
+                            kategoris.slice(0, 10).map((kategori) => (
+                                <CategoryCard
+                                    key={kategori.id}
+                                    id={kategori.id}
+                                    name={kategori.nama}
+                                    icon={getCategoryIcon(kategori.nama)}
+                                />
+                            ))
+                        )}
                     </div>
                 </section>
 
@@ -185,8 +187,18 @@ export default function HomePage() {
                                 <BarangCard key={barang.id} barang={barang} />
                             ))
                         ) : (
-                            <div className="col-span-full text-center py-8 text-gray-500">
-                                Belum ada barang temuan
+                            <div className="col-span-full flex flex-col items-center justify-center py-8 px-4">
+                                <div className="w-24 h-24 mb-6 relative opacity-50">
+                                    <svg className="w-full h-full text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                                    Belum Ada Barang Temuan
+                                </h3>
+                                <p className="text-gray-500 text-center max-w-md mb-6">
+                                    Belum ada barang yang ditemukan saat ini. Jika Anda menemukan barang, silakan laporkan!
+                                </p>
                             </div>
                         )}
                     </div>
@@ -215,8 +227,18 @@ export default function HomePage() {
                                 <BarangCard key={barang.id} barang={barang} />
                             ))
                         ) : (
-                            <div className="col-span-full text-center py-8 text-gray-500">
-                                Belum ada barang hilang
+                            <div className="col-span-full flex flex-col items-center justify-center py-8 px-4">
+                                <div className="w-24 h-24 mb-6 relative opacity-50">
+                                    <svg className="w-full h-full text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                                    Belum Ada Laporan Barang Hilang
+                                </h3>
+                                <p className="text-gray-500 text-center max-w-md mb-6">
+                                    Belum ada laporan barang hilang saat ini. Jika Anda kehilangan barang, segera laporkan!
+                                </p>
                             </div>
                         )}
                     </div>
