@@ -6,7 +6,7 @@ export type Reference = {
 };
 
 export type PelaporSummary = {
-  id: number;
+  id: string; // UUID
   name: string | null;
   username: string | null;
   noTelepon: string | null;
@@ -15,20 +15,19 @@ export type PelaporSummary = {
 export type BarangWithRelations = {
   id: number;
   nama: string;
-  tipeId: number;
-  kategoriId: number;
-  pelaporId: number | null;
-  statusId: number;
-  waktu: string;
+  tipe: string; // 'hilang' or 'temuan' (TEXT field)
+  kategoriId: number | null;
+  pelaporId: string | null; // UUID
+  statusId: number | null;
+  waktu: string | null;
   lokasi: string | null;
   kontak: string | null;
   deskripsi: string | null;
   foto: string | null;
   createdAt: string;
   updatedAt: string;
-  tipe: Reference;
-  kategori: Reference;
-  status: Reference;
+  kategori: Reference | null;
+  status: Reference | null;
   pelapor: PelaporSummary;
 };
 
@@ -37,10 +36,10 @@ export type Kategori = Reference;
 type SupabaseBarangRow = {
   id: number;
   nama: string;
-  tipe_id: number;
-  kategori_id: number;
-  pelapor_id: number | null;
-  status_id: number;
+  tipe: string; // TEXT field: 'hilang' or 'temuan'
+  kategori_id: number | null;
+  pelapor_id: string | null; // UUID
+  status_id: number | null;
   waktu: string | null;
   lokasi: string | null;
   kontak: string | null;
@@ -48,12 +47,11 @@ type SupabaseBarangRow = {
   foto: string | null;
   created_at: string | null;
   updated_at: string | null;
-  tipe: Reference[] | null;
   kategori: Reference[] | null;
   status: Reference[] | null;
   pelapor:
     | {
-        id: number;
+        id: string; // UUID
         name: string | null;
         username: string | null;
         no_telepon: string | null;
@@ -64,7 +62,7 @@ type SupabaseBarangRow = {
 const barangSelect = `
   id,
   nama,
-  tipe_id,
+  tipe,
   kategori_id,
   pelapor_id,
   status_id,
@@ -75,7 +73,6 @@ const barangSelect = `
   foto,
   created_at,
   updated_at,
-  tipe:tipe_id(id, nama),
   kategori:kategori_id(id, nama),
   status:status_id(id, nama),
   pelapor:pelapor_id(id, name, username, no_telepon)
@@ -83,26 +80,24 @@ const barangSelect = `
 
 // Map data dari Supabase ke bentuk BarangWithRelations
 function mapBarang(row: SupabaseBarangRow): BarangWithRelations {
-  const tipeRel = row.tipe?.[0] ?? { id: row.tipe_id, nama: "-" };
-  const kategoriRel = row.kategori?.[0] ?? { id: row.kategori_id, nama: "-" };
-  const statusRel = row.status?.[0] ?? { id: row.status_id, nama: "-" };
+  const kategoriRel = row.kategori?.[0] ?? null;
+  const statusRel = row.status?.[0] ?? null;
   const pelaporRel = row.pelapor?.[0] ?? null;
 
   return {
     id: row.id,
     nama: row.nama,
-    tipeId: row.tipe_id,
+    tipe: row.tipe, // 'hilang' or 'temuan' as TEXT
     kategoriId: row.kategori_id,
     pelaporId: row.pelapor_id,
     statusId: row.status_id,
-    waktu: row.waktu ?? "",
+    waktu: row.waktu,
     lokasi: row.lokasi,
     kontak: row.kontak,
     deskripsi: row.deskripsi,
     foto: row.foto,
     createdAt: row.created_at ?? "",
     updatedAt: row.updated_at ?? "",
-    tipe: tipeRel,
     kategori: kategoriRel,
     status: statusRel,
     pelapor: pelaporRel
@@ -155,15 +150,17 @@ export async function getBarangOverview() {
     const barangs = mapBarangs(barangData ?? []);
     const kategoris: Kategori[] = (kategoriData ?? []) as Kategori[];
 
+    console.log(barangs);
+
     const barangTemuan = sortByWaktuDesc(
       barangs.filter(
-        (barang) => barang.tipe.nama === "Temuan" && barang.status.nama === "Belum Dikembalikan"
+        (barang) => barang.tipe === "temuan" && barang.statusId == 1
       )
     ).slice(0, 6);
 
     const barangHilang = sortByWaktuDesc(
       barangs.filter(
-        (barang) => barang.tipe.nama === "Hilang" && barang.status.nama === "Belum Ditemukan"
+        (barang) => barang.tipe === "hilang" && barang.statusId == 2
       )
     ).slice(0, 6);
 
@@ -198,21 +195,34 @@ export async function getBarangById(id: number): Promise<BarangWithRelations | n
 // Parameter pencarian
 export type SearchParams = {
   q?: string;
-  tipe?: string;
+  tipe?: string; // 'hilang' or 'temuan'
   kategori?: number[];
+  pelaporId?: string; // UUID for filtering by user
 };
 
 // Fungsi pencarian barang
 export async function searchBarangs(params: SearchParams): Promise<BarangWithRelations[]> {
   if (!supabase) return [];
 
-  const { q, tipe, kategori = [] } = params;
+  const { q, tipe, kategori = [], pelaporId } = params;
 
   try {
     let query = supabase.from("barangs").select(barangSelect).order("waktu", { ascending: false });
 
+    // Filter by kategori
     if (kategori.length > 0) {
       query = query.in("kategori_id", kategori);
+    }
+
+    // Filter by pelapor (for myBarangs)
+    if (pelaporId) {
+      query = query.eq("pelapor_id", pelaporId);
+    }
+
+    // Filter by tipe (hilang or temuan)
+    if (tipe) {
+      const normalizedTipe = tipe.toLowerCase();
+      query = query.eq("tipe", normalizedTipe);
     }
 
     const { data, error } = await query;
@@ -220,6 +230,7 @@ export async function searchBarangs(params: SearchParams): Promise<BarangWithRel
 
     let items = mapBarangs(data ?? []);
 
+    // Search by keyword in nama, kategori, lokasi
     if (q) {
       const needle = q.toLowerCase();
       items = items.filter(
@@ -228,16 +239,6 @@ export async function searchBarangs(params: SearchParams): Promise<BarangWithRel
           (barang.kategori?.nama?.toLowerCase().includes(needle) ?? false) ||
           (barang.lokasi?.toLowerCase().includes(needle) ?? false)
       );
-    }
-
-    if (tipe) {
-      items = items.filter((barang) => barang.tipe.nama === tipe);
-
-      if (tipe === "Temuan") {
-        items = items.filter((barang) => barang.status.nama === "Belum Dikembalikan");
-      } else if (tipe === "Hilang") {
-        items = items.filter((barang) => barang.status.nama === "Belum Ditemukan");
-      }
     }
 
     return items;

@@ -136,12 +136,24 @@ export default function LaporHilangPage() {
     };
 
     // Show loading while checking auth
-    if (authLoading) {
+    if (authLoading || isLoadingKategoris) {
         return (
-            <section className="bg-[#f4f4f4] min-h-screen pt-8 sm:pt-12 pb-12 px-4 sm:px-8 md:px-[100px] font-poppins flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Memuat...</p>
+            <section className="bg-[#f4f4f4] min-h-screen pt-8 sm:pt-12 pb-12 px-4 sm:px-8 md:px-[100px] font-poppins">
+                <div className="max-w-3xl mx-auto">
+                    <div className="mb-8">
+                        <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
+                        <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    
+                    <div className="bg-white rounded-xl shadow-lg p-8 space-y-6">
+                        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                            <div key={i} className="space-y-2">
+                                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+                                <div className="h-12 w-full bg-gray-200 rounded animate-pulse"></div>
+                            </div>
+                        ))}
+                        <div className="h-12 w-full bg-gray-200 rounded-lg animate-pulse mt-8"></div>
+                    </div>
                 </div>
             </section>
         );

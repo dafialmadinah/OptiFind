@@ -2,15 +2,15 @@ import Image from "next/image";
 import Link from "next/link";
 
 interface CategoryCardProps {
-  id: number;
-  name: string;
-  icon: string;
+    id: number;
+    name: string;
+    icon: string;
 }
 
 export function CategoryCard({ id, name, icon }: CategoryCardProps) {
   return (
     <Link
-      href={`/barangs-list?kategori=${id}`}
+      href={`/cari?kategori=${id}`}
       className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-all group border border-gray-100"
     >
       <div className="w-16 h-16 flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -23,9 +23,9 @@ export function CategoryCard({ id, name, icon }: CategoryCardProps) {
         />
       </div>
 
-      <span className="text-sm text-center text-gray-700 font-medium leading-tight">
-        {name}
-      </span>
-    </Link>
-  );
+            <span className="text-sm text-center text-gray-700 font-medium leading-tight">
+                {name}
+            </span>
+        </Link>
+    );
 }
