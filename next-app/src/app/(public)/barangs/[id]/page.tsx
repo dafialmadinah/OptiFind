@@ -24,15 +24,59 @@ interface Barang {
     nama: string;
     foto: string | null;
     kategori: { id: number; nama: string };
-    status: { id: number; nama: string };
+    status?: { id: number; nama: string } | null;
+    kategoriId: number;
+    statusId?: number | null;
     tipe: string; // "hilang" or "temuan"
     waktu: string | null;
     lokasi: string | null;
     deskripsi: string | null;
     kontak: string | null;
-    pelapor: { id: string; name: string } | null; // UUID
+    pelapor: { id: string; name: string } | null;
     createdAt: string;
 }
+
+// Helper untuk handle statusId jika status null
+const convertStatusIdToString = (statusId: number | null | undefined) => {
+    switch (statusId) {
+        case 1:
+            return "Belum Dikembalikan";
+        case 2:
+            return "Belum Ditemukan";
+        case 3:
+            return "Sudah Dikembalikan";
+        case 4:
+            return "Sudah Ditemukan";
+        default:
+            return "Status tidak dikenal";
+    }
+};
+
+const getKategoriNama = (
+    kategori: { id: number; nama: string } | null,
+    kategoriId?: number
+) => {
+    if (kategori?.nama) return kategori.nama;
+
+    // fallback jika kategori null, bisa disesuaikan dengan mapping ID ke nama
+    const kategoriMapping: Record<number, string> = {
+        1: "Dompet",
+        2: "Kunci",
+        3: "Aksesoris",
+        4: "Smartphone",
+        5: "Elektronik",
+        6: "Botol Minum",
+        7: "Alat Tulis",
+        8: "Pakaian",
+        9: "Dokumen",
+        10: "Lainnya",
+    };
+
+    if (kategoriId && kategoriMapping[kategoriId])
+        return kategoriMapping[kategoriId];
+
+    return "Kategori tidak dikenal";
+};
 
 function resolveImageSrc(foto: string | null) {
     if (!foto) return "/assets/no_image.png";
@@ -50,104 +94,40 @@ export default function BarangDetailPage({ params }: Props) {
         fetchBarang();
     }, [params.id]);
 
-    // const fetchBarang = async () => {
-    //   try {
-    //     const response = await fetch(`/api/barangs/${params.id}`);
-    //     if (!response.ok) {
-    //       router.push('/barangs');
-    //       return;
-    //     }
-    //     const data = await response.json();
-    //     setBarang(data.data);
-    //   } catch (error) {
-    //     console.error('Error fetching barang:', error);
-    //     router.push('/barangs');
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-
     const fetchBarang = async () => {
         try {
-            // 🧠 Barang dummy (bisa kamu ubah sesuka hati)
-            const dummyBarang: Barang = {
-                id: 1,
-                nama: "Kunci Motor Honda",
-                foto: "/assets/kunci.svg",
-                kategori: { id: 2, nama: "Aksesoris & Kunci" },
-                status: { id: 1, nama: "Belum dikembalikan" },
-                tipe: "temuan", // Changed to string
-                waktu: "2025-10-20T10:00:00Z",
-                lokasi: "Parkiran Teknik UB",
-                deskripsi:
-                    "Kunci motor ditemukan di area parkiran dekat gedung utama. Ada gantungan warna merah.",
-                kontak: "085123456789",
-                pelapor: { id: "550e8400-e29b-41d4-a716-446655440000", name: "Rhesa Tsaqif" }, // UUID
-                createdAt: "2025-10-21T08:30:00Z",
-            };
-
-            // ⏳ Simulasikan delay seperti request sungguhan
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
-            setBarang(dummyBarang);
+            const res = await fetch(`/api/barangs/${params.id}`);
+            if (!res.ok) {
+                router.push("/barangs");
+                return;
+            }
+            const data = await res.json();
+            setBarang(data);
         } catch (error) {
-            console.error("Error fetching dummy barang:", error);
+            console.error("Error fetching barang:", error);
             router.push("/barangs");
         } finally {
             setLoading(false);
         }
     };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="container mx-auto px-4 max-w-4xl">
-          {/* Breadcrumb Skeleton */}
-          <div className="mb-6 flex items-center gap-2">
-            <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
-              {/* Image Skeleton */}
-              <div className="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
-
-              {/* Info Skeleton */}
-              <div className="space-y-4">
-                <div className="h-8 w-3/4 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse"></div>
-                
-                <div className="space-y-3 pt-4">
-                  <div className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-4 w-2/3 bg-gray-200 rounded animate-pulse"></div>
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 py-8">
+                <div className="container mx-auto px-4 max-w-4xl">
+                    <div className="h-96 w-full bg-gray-200 animate-pulse rounded-xl"></div>
                 </div>
-
-                <div className="space-y-2 pt-4">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="flex gap-2">
-                      <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
-                      <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="h-12 w-full bg-gray-200 rounded-lg animate-pulse mt-6"></div>
-              </div>
             </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-    if (!barang) {
-        return null;
+        );
     }
 
+    if (!barang) return null;
+
     const imageSrc = resolveImageSrc(barang.foto);
+    const statusText = barang.status
+        ? barang.status.nama
+        : convertStatusIdToString(barang.statusId);
+
     const waktuDitemukan = barang.waktu
         ? dayjs(barang.waktu).format("dddd, DD-MM-YYYY")
         : "-";
@@ -156,10 +136,10 @@ export default function BarangDetailPage({ params }: Props) {
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
             case "belum dikembalikan":
-            case "hilang":
+            case "belum ditemukan":
                 return "bg-red-100 text-red-700";
             case "sudah dikembalikan":
-            case "selesai":
+            case "sudah ditemukan":
                 return "bg-green-100 text-green-700";
             default:
                 return "bg-gray-100 text-gray-700";
@@ -183,8 +163,6 @@ export default function BarangDetailPage({ params }: Props) {
                                 />
                             </div>
                         </div>
-
-                        {/* Contact Button */}
                         {barang.kontak && (
                             <div className="w-full mt-6">
                                 <Link
@@ -202,19 +180,18 @@ export default function BarangDetailPage({ params }: Props) {
                         )}
                     </div>
 
-                    {/* Detail Barang (kanan) */}
+                    {/* Right Side - Info */}
                     <div className="p-4 space-y-6">
-                        {/* Judul */}
                         <div>
                             <h1 className="text-2xl font-bold text-blue-900 mb-2">
                                 {barang.nama}
                             </h1>
                             <p className="text-lg font-semibold text-gray-500">
-                                {barang.tipe.charAt(0).toUpperCase() + barang.tipe.slice(1)}
+                                {barang.tipe.charAt(0).toUpperCase() +
+                                    barang.tipe.slice(1)}
                             </p>
                         </div>
 
-                        {/* Kategori */}
                         <div className="flex items-center gap-6">
                             <Image
                                 src="/assets/kategori.svg"
@@ -227,12 +204,14 @@ export default function BarangDetailPage({ params }: Props) {
                                     Kategori
                                 </p>
                                 <p className="text-base text-gray-800 mt-2">
-                                    {barang.kategori.nama}
+                                    {getKategoriNama(
+                                        barang.kategori,
+                                        barang.kategoriId
+                                    )}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Status */}
                         <div className="flex items-center gap-6">
                             <Image
                                 src="/assets/status.svg"
@@ -245,16 +224,15 @@ export default function BarangDetailPage({ params }: Props) {
                                 <p className="text-base text-gray-800 mt-2">
                                     <span
                                         className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                                            barang.status.nama
+                                            statusText
                                         )}`}
                                     >
-                                        {barang.status.nama}
+                                        {statusText}
                                     </span>
                                 </p>
                             </div>
                         </div>
 
-                        {/* Waktu Ditemukan */}
                         <div className="flex items-center gap-6">
                             <Image
                                 src="/assets/tanggal.svg"
@@ -275,7 +253,6 @@ export default function BarangDetailPage({ params }: Props) {
                             </div>
                         </div>
 
-                        {/* Lokasi */}
                         <div className="flex items-center gap-6">
                             <Image
                                 src="/assets/lokasi_abu.svg"
@@ -293,7 +270,6 @@ export default function BarangDetailPage({ params }: Props) {
                             </div>
                         </div>
 
-                        {/* Deskripsi */}
                         <div className="flex items-start gap-6">
                             <Image
                                 src="/assets/deskripsi.svg"
@@ -312,7 +288,6 @@ export default function BarangDetailPage({ params }: Props) {
                             </div>
                         </div>
 
-                        {/* Kontak Pelapor */}
                         <div className="border-t pt-6 space-y-6">
                             <h2 className="text-lg font-semibold text-gray-900">
                                 Kontak Pelapor
@@ -353,7 +328,6 @@ export default function BarangDetailPage({ params }: Props) {
                             </div>
                         </div>
 
-                        {/* Tombol Kontak (Mobile) */}
                         {barang.kontak && (
                             <div className="lg:hidden pt-4">
                                 <Link
