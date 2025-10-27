@@ -132,7 +132,7 @@ export default function HomePage() {
                         title="Tukar poin menjadi uang!"
                         subtitle="Kembalikan barang milik orang lain dan raih poin"
                         buttonText="Tukarkan Poin"
-                        buttonLink="/barangs/lapor-temuan"
+                        buttonLink="/coming-soon"
                         backgroundImage="/assets/banner_poin.png"
                         variant="orange"
                     />
