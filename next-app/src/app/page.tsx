@@ -367,7 +367,7 @@ function TestimonialsWithFooterReveal() {
   return (
     <section ref={sectionRef} className="relative py-20 sm:py-24 md:h-screen md:py-0" id="testimoni">
       {/* Cover layer with testimonials - will slide up to reveal footer */}
-      <div ref={coverRef} className="relative w-full overflow-hidden bg-white shadow-2xl cover md:min-h-screen">
+      <div ref={coverRef} className="cover relative w-full overflow-hidden bg-white shadow-2xl min-h-screen">
         <div className="relative z-10 mx-auto grid w-full max-w-[1200px] gap-10 px-5 py-14 sm:px-6 sm:py-16 md:px-10 md:py-20 lg:grid-cols-[420px_1fr] lg:gap-16">
           <div className="flex flex-col gap-6">
             {/* Card "Apa kata mereka" - background biru turun seperti curtain */}
@@ -593,14 +593,15 @@ function CommunityImpact() {
   useImpactCountUp();
 
   return (
-    <section id="dampak" className="py-20 overflow-hidden text-white section sm:py-24 md:h-screen md:py-0">
-      <div
-        className="impact-bg flex min-h-[460px] items-center bg-gradient-to-br from-[#203063] via-[#28407a] to-[#142253] will-change-transform md:sticky md:top-0 md:h-screen"
-        data-impact-bg
-        style={{ backgroundSize: "120% 120%", backgroundPosition: "50% 50%" }}
-      >
-        <div className="flex flex-col items-start w-full max-w-6xl gap-16 px-6 py-12 mx-auto md:flex-row md:items-center md:justify-between md:gap-24 md:px-10 md:py-0">
-          <div data-step className="max-w-lg">
+    <section id="dampak" className="section relative overflow-hidden text-white min-h-screen">
+      <div className="md:sticky md:top-0 md:h-screen md:flex md:items-center">
+        <div
+          className="impact-bg w-full flex items-center bg-gradient-to-br from-[#203063] via-[#28407a] to-[#142253] will-change-transform min-h-screen md:h-screen"
+          data-impact-bg
+          style={{ backgroundSize: "120% 120%", backgroundPosition: "50% 50%" }}
+        >
+          <div className="relative flex flex-col items-start w-full max-w-6xl gap-16 px-6 py-20 mx-auto sm:py-24 md:py-0 md:flex-row md:items-center md:justify-between md:gap-24 md:px-10">
+            <div data-step className="max-w-lg">
             <h2 className="text-[34px] leading-[1.05] tracking-[-0.02em] font-extrabold text-white sm:text-[40px] md:text-[56px]">
               <span className="text-[#f48b2f]">Dampak</span>
               <br />
@@ -626,6 +627,7 @@ function CommunityImpact() {
             ))}
           </div>
         </div>
+      </div>
       </div>
     </section>
   );
