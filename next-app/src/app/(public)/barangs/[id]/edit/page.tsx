@@ -20,11 +20,14 @@ export default function EditBarangPage() {
     const [isLoadingKategoris, setIsLoadingKategoris] = useState(true);
     const [isLoadingBarang, setIsLoadingBarang] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [barangTipe, setBarangTipe] = useState<string>("");
+    const [currentStatusId, setCurrentStatusId] = useState<number>(1);
 
     const [formData, setFormData] = useState({
         nama: "",
-        kategori: "",
+        kategoriId: 0,
         waktu: "",
         lokasi: "",
         deskripsi: "",
@@ -60,9 +63,11 @@ export default function EditBarangPage() {
                 if (!res.ok) throw new Error("Status barang tidak ditemukan");
                 const data = await res.json();
 
+                setBarangTipe(data.tipe || "");
+                setCurrentStatusId(data.statusId || 1);
                 setFormData({
                     nama: data.nama || "",
-                    kategori: data.kategori || "",
+                    kategoriId: data.kategoriId || 0,
                     waktu: data.waktu?.slice(0, 16) || "",
                     lokasi: data.lokasi || "",
                     deskripsi: data.deskripsi || "",
@@ -95,7 +100,11 @@ export default function EditBarangPage() {
         >
     ) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        if (name === "kategoriId") {
+            setFormData((prev) => ({ ...prev, [name]: Number(value) }));
+        } else {
+            setFormData((prev) => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,12 +137,13 @@ export default function EditBarangPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     nama: formData.nama,
-                    kategori: formData.kategori,
+                    kategoriId: formData.kategoriId,
                     waktu: formData.waktu,
                     lokasi: formData.lokasi,
                     deskripsi: formData.deskripsi,
                     kontak: formData.kontak,
                     foto: fotoUrl,
+                    // TIDAK mengirim statusId - status tidak berubah saat simpan
                 }),
             });
 
@@ -145,7 +155,8 @@ export default function EditBarangPage() {
             }
 
             alert("✅ Barang berhasil diperbarui!");
-            router.push("/barangs");
+            // Tetap di halaman edit atau kembali ke riwayat
+            router.push("/riwayat-laporan");
         } catch (err) {
             const message =
                 err instanceof Error
@@ -159,10 +170,90 @@ export default function EditBarangPage() {
         }
     };
 
+    const handleUpdateStatus = async (newStatusId: number, actionName: string) => {
+        if (!confirm(`Apakah Anda yakin ingin mengubah status menjadi "${actionName}"?`)) {
+            return;
+        }
+
+        setIsUpdatingStatus(true);
+        try {
+            const response = await fetch(`/api/barangs/${id}/status`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ statusId: newStatusId }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Gagal mengubah status");
+            }
+
+            setCurrentStatusId(newStatusId);
+            alert(`✅ Status berhasil diubah menjadi "${actionName}"!`);
+            router.push("/riwayat-laporan");
+        } catch (error) {
+            console.error("Error updating status:", error);
+            alert("❌ Gagal mengubah status. Silakan coba lagi.");
+        } finally {
+            setIsUpdatingStatus(false);
+        }
+    };
+
+    const handleSelesai = () => {
+        // Status ID: 1=Belum Dikembalikan, 2=Belum Ditemukan, 3=Sudah Dikembalikan, 4=Sudah Ditemukan
+        const newStatusId = barangTipe === "temuan" ? 3 : 4;
+        const actionName = barangTipe === "temuan" ? "Sudah Dikembalikan" : "Sudah Ditemukan";
+        handleUpdateStatus(newStatusId, actionName);
+    };
+
+    const handleBatal = () => {
+        // Reset to initial status
+        const newStatusId = barangTipe === "temuan" ? 1 : 2;
+        const actionName = barangTipe === "temuan" ? "Belum Dikembalikan" : "Belum Ditemukan";
+        handleUpdateStatus(newStatusId, actionName);
+    };
+
+    const isSelesai = () => {
+        // Status 3 = Sudah Dikembalikan, 4 = Sudah Ditemukan
+        return currentStatusId === 3 || currentStatusId === 4;
+    };
+
     if (authLoading || isLoadingBarang || isLoadingKategoris) {
         return (
-            <section className="bg-[#f4f4f4] min-h-screen flex items-center justify-center font-poppins">
-                <p className="text-gray-600 animate-pulse">Memuat data...</p>
+            <section className="bg-[#f4f4f4] pt-8 sm:pt-12 pb-12 px-4 sm:px-8 md:px-[100px] font-poppins">
+                <div className="mx-auto max-w-[1232px] rounded-[20px] bg-white p-8">
+                    {/* Header Skeleton */}
+                    <div className="mb-6">
+                        <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
+                        <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                    <hr className="mb-6 border-[#b0b0b0]" />
+
+                    {/* Form Skeleton */}
+                    <div className="space-y-6">
+                        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                            <div key={i} className="space-y-2">
+                                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+                                <div className="h-12 w-full bg-gray-200 rounded-lg animate-pulse"></div>
+                            </div>
+                        ))}
+                        
+                        {/* Button Skeleton */}
+                        <div className="w-full sm:max-w-sm sm:mx-auto mt-8">
+                            <div className="h-12 w-full bg-gray-200 rounded-lg animate-pulse"></div>
+                        </div>
+                    </div>
+
+                    {/* Status Section Skeleton */}
+                    <div className="mt-8 pt-6 border-t border-gray-200">
+                        <div className="h-6 w-48 bg-gray-200 rounded animate-pulse mb-4"></div>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <div className="flex-1 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
+                        </div>
+                        <div className="mt-3 h-4 w-full bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                </div>
             </section>
         );
     }
@@ -202,15 +293,15 @@ export default function EditBarangPage() {
                             Kategori
                         </label>
                         <select
-                            name="kategori"
-                            value={formData.kategori}
+                            name="kategoriId"
+                            value={formData.kategoriId}
                             onChange={handleChange}
                             required
                             className="mt-1 w-full rounded-[10px] border border-[#b0b0b0] px-4 py-2 text-[15px] outline-none focus:border-blue-400"
                         >
-                            <option value="">Pilih kategori</option>
+                            <option value={0}>Pilih kategori</option>
                             {kategoris.map((kat) => (
-                                <option key={kat.id} value={kat.nama}>
+                                <option key={kat.id} value={kat.id}>
                                     {kat.nama}
                                 </option>
                             ))}
@@ -323,6 +414,51 @@ export default function EditBarangPage() {
                         </button>
                     </div>
                 </form>
+
+                {/* Action Buttons - Status Update */}
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Ubah Status Barang</h2>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        {!isSelesai() && (
+                            <button
+                                onClick={handleSelesai}
+                                disabled={isUpdatingStatus}
+                                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isUpdatingStatus ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        <span>Memproses...</span>
+                                    </>
+                                ) : (
+                                    barangTipe === "temuan" ? "✓ Sudah Dikembalikan" : "✓ Sudah Ditemukan"
+                                )}
+                            </button>
+                        )}
+                        {isSelesai() && (
+                            <button
+                                onClick={handleBatal}
+                                disabled={isUpdatingStatus}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isUpdatingStatus ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        <span>Memproses...</span>
+                                    </>
+                                ) : (
+                                    "✕ Batalkan Status Selesai"
+                                )}
+                            </button>
+                        )}
+                    </div>
+                    <p className="text-sm text-gray-600 mt-3">
+                        {!isSelesai() 
+                            ? `Tandai barang sebagai "${barangTipe === "temuan" ? "Sudah Dikembalikan" : "Sudah Ditemukan"}" jika proses sudah selesai.`
+                            : "Batalkan status selesai jika ada kesalahan atau barang belum benar-benar selesai."
+                        }
+                    </p>
+                </div>
             </div>
         </section>
     );

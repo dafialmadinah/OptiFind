@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     const isAdmin = userData?.role === "ADMIN";
 
-    // Compare UUID strings
+    // Compare UUID strings - only owner or admin can edit
     if (!isAdmin && barang.pelaporId !== userId) {
         return NextResponse.json(
             { message: "Anda tidak memiliki akses." },
@@ -56,58 +56,43 @@ export async function PUT(request: NextRequest, { params }: Params) {
         );
     }
 
-    if (!barang.statusId) {
+    // Parse request body untuk update data barang
+    const body = await request.json();
+    const { nama, kategoriId, waktu, lokasi, deskripsi, kontak, foto } = body;
+
+    // Validasi required fields
+    if (!nama || !kategoriId || !lokasi || !kontak) {
         return NextResponse.json(
-            { message: "Status barang tidak ditemukan." },
+            { message: "Field wajib tidak lengkap." },
             { status: 400 }
         );
     }
 
-    const statusId = barang.statusId;
-    let statusTarget: number | null = null;
-
-    if (statusId == 1) {
-        statusTarget = 3;
-    } else if (statusId == 2) {
-        statusTarget = 4;
-    } else {
-        return NextResponse.json(
-            { message: "Laporan sudah dalam status selesai." },
-            { status: 400 }
-        );
-    }
-
-    // cari id status baru
-    const { data: statusBaru, error: statusError } = await supabase
-        .from("statuses")
-        .select("id")
-        .eq("nama", statusTarget)
-        .maybeSingle<{ id: number }>();
-
-    if (statusError) {
-        console.error("Status lookup error", statusError);
-        return NextResponse.json(
-            { message: "Gagal mencari status baru." },
-            { status: 500 }
-        );
-    }
-
-    // update status barang
+    // Update data barang (TIDAK termasuk status_id)
     const { error: updateError } = await supabase
         .from("barangs")
-        .update({ status_id: statusTarget })
+        .update({
+            nama,
+            kategori_id: kategoriId,
+            waktu: waktu || null,
+            lokasi,
+            deskripsi: deskripsi || null,
+            kontak,
+            foto: foto || null,
+            // TIDAK update status_id - status tetap sama
+        })
         .eq("id", barangId);
 
     if (updateError) {
-        console.error("Status update error", updateError);
+        console.error("Barang update error:", updateError);
         return NextResponse.json(
-            { message: "Gagal memperbarui status." },
+            { message: "Gagal memperbarui barang." },
             { status: 500 }
         );
     }
 
     return NextResponse.json({
-        message: "Status laporan berhasil diperbarui.",
+        message: "Barang berhasil diperbarui.",
     });
 }
 
