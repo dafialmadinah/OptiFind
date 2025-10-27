@@ -40,9 +40,7 @@ a {
 }
 
 .hero-gradient {
-  background: linear-gradient(135deg, #4269d3, #2a4190, #142253, #1a2b62);
-  background-size: 200% 200%;
-  animation: gradientShift 18s ease infinite;
+  background: linear-gradient(180deg, #193a6f 0%, #3b66ac 55%, #ffffff 100%);
 }
 
 .floating {
@@ -113,6 +111,10 @@ a {
   50% {
     transform: translateY(-16px);
   }
+}
+
+.section-hidden {
+  visibility: hidden;
 }
 
 @keyframes fadeUp {

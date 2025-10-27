@@ -2,10 +2,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactElement } from "react";
+import { useEffect, useRef } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
 import { LandingNavbar } from "@/components/landing-navbar";
 import { HomeSplashScreen } from "@/components/home-splash-screen";
+import { useMorphingHowItWorks } from "@/hooks/useMorphingHowItWorks";
+import { useImpactCountUp } from "@/hooks/useImpactCountUp";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 type Step = {
   title: string;
@@ -147,10 +152,196 @@ export default function LandingPage() {
         <HeroSection />
         <HowItWorks />
         <CommunityImpact />
-        <Testimonials />
-        <LandingFooter />
+        <TestimonialsWithFooterReveal />
       </div>
     </>
+  );
+}
+
+function TestimonialsWithFooterReveal() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const coverRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    if (!sectionRef.current || !coverRef.current) return;
+    
+    const section = sectionRef.current;
+    const cover = coverRef.current;
+    
+    // Measure actual heights to calculate proper end position
+    const footerHeight = section.querySelector('.bg-gradient-to-br')?.scrollHeight || 400;
+    const endPosition = `+=${footerHeight}`;
+    
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: section,
+        start: "top top",
+        end: endPosition,
+        scrub: 1,
+        pin: true,
+        pinSpacing: true,
+      }
+    });
+    
+    // Slide cover up to reveal footer
+    tl.to(cover, { yPercent: -100, ease: "none" });
+    
+    return () => {
+      ScrollTrigger.getAll().forEach(trigger => {
+        if (trigger.trigger === section) trigger.kill();
+      });
+    };
+  }, []);
+
+  return (
+    <section ref={sectionRef} className="relative">
+      {/* Footer fixed behind */}
+      <div className="overflow-hidden bg-gradient-to-br from-[#1a2d68] via-[#1e3675] to-[#223f8a] text-white">
+        <div className="pointer-events-none absolute left-1/2 -top-14 h-24 w-[90%] -translate-x-1/2 rounded-full bg-white/15 blur-3xl" />
+        <div className="absolute inset-0 pointer-events-none opacity-30">
+          <div className="absolute bottom-0 w-40 h-40 rounded-full -left-32 bg-white/10 blur-2xl" />
+          <div className="absolute w-32 h-32 rounded-full right-12 top-4 bg-white/10 blur-2xl" />
+        </div>
+        <div className="relative flex flex-col w-full max-w-6xl gap-12 px-6 py-16 mx-auto md:flex-row md:items-start md:justify-between">
+          <div className="max-w-sm space-y-4">
+            <div className="flex items-center gap-1">
+              <Image src="/assets/magnifier.svg" alt="OptiFind" width={40} height={40} className="w-10 h-10" />
+              <p className="text-2xl font-semibold leading-tight">
+                <span className="text-white">pti</span>
+                <span className="text-[#f48b2f]">Find</span>
+              </p>
+            </div>
+            <p className="text-sm text-white/70">Teknologi yang Menyatukan Kepedulian.</p>
+          </div>
+
+          <div className="grid flex-1 gap-10 text-sm sm:grid-cols-[1fr] md:grid-cols-2 md:gap-16">
+            <div>
+              <p className="text-sm font-semibold tracking-wide text-white uppercase">Navigasi Cepat</p>
+              <ul className="mt-4 space-y-2 text-sm text-white/75">
+                {QUICK_LINKS.map((item) => (
+                  <li key={item.label}>
+                    <Link href={item.href} className="transition hover:text-white">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="text-sm font-semibold tracking-wide text-white uppercase">Ikuti Kami</p>
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                {SOCIAL_LINKS.map(({ label, href, Icon }) => (
+                  <Link
+                    key={label}
+                    href={href}
+                    aria-label={label}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white hover:text-[#1a2d68]"
+                  >
+                    <Icon className="h-5 w-5 transition group-hover:text-[#1a2d68]" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="mx-auto h-px w-[90%] max-w-5xl bg-white/15 mt-12" />
+        <p className="py-6 text-xs text-center text-white/70">
+          &copy; {new Date().getFullYear()} OptiFind! Platform. Semua hak dilindungi undang-undang.
+        </p>
+      </div>
+      
+      {/* Testimonials cover */}
+      <div ref={coverRef} className="bg-white rounded-t-[48px]">
+        <div className="mx-auto grid max-w-[1200px] gap-10 px-6 py-20 lg:grid-cols-[420px_1fr] lg:gap-16 w-full">
+          <div className="flex flex-col gap-6">
+            <div className="fade-up rounded-[32px] bg-gradient-to-br from-[#3d5086] to-[#2d3f6b] p-12 text-white shadow-2xl lg:-mt-20 lg:p-16 min-h-[400px] flex flex-col justify-center">
+              <div className="space-y-10">
+                <h2 className="text-5xl font-bold leading-tight">
+                  Apa kata
+                  <br />
+                  mereka?
+                </h2>
+                <div className="flex items-center gap-4">
+                  <div>
+                    <div className="flex items-center gap-1">
+                      <Image src="/assets/magnifier.svg" alt="OptiFind" width={32} height={32} className="w-8 h-8" />
+                      <span className="text-xl font-bold text-white">ptiFind</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="flex gap-1 text-yellow-300">
+                        <StarIcon />
+                        <StarIcon />
+                        <StarIcon />
+                        <StarIcon />
+                        <StarIcon />
+                      </span>
+                      <span className="text-lg font-semibold text-[#f48b2f]">4.8/5</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-center lg:justify-start">
+              <Link
+                href="/feedback"
+                className="btn-glow inline-flex items-center justify-center rounded-[12px] bg-[#f48b2f] px-8 py-4 text-base font-bold text-white transition hover:bg-[#d67d3a] shadow-lg hover:shadow-xl w-full"
+              >
+                Beri Kami Feedback untuk Terus Berkembang
+              </Link>
+            </div>
+          </div>
+          <div className="space-y-6">
+            {TESTIMONIALS.map((item, index) => (
+              <article
+                key={item.name}
+                className={`fade-up rounded-[32px] bg-[#f8f9fa] px-10 py-8 shadow-lg transition hover:shadow-xl ${
+                  index === 1 ? "fade-up-delay-1" : ""
+                }`}
+              >
+                <div className="flex items-start gap-5">
+                  <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#f48b2f] to-[#f5a85f] text-2xl font-bold text-white shadow-lg">
+                    {item.name.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xl font-bold text-[#3d5086]">{item.name}</h3>
+                      <span className="flex gap-1 text-yellow-400">
+                        <StarIcon />
+                        <StarIcon />
+                        <StarIcon />
+                        <StarIcon />
+                        <StarIcon />
+                      </span>
+                    </div>
+                    <p className="mb-4 text-[15px] leading-relaxed text-[#5a5a5a]">{item.quote}</p>
+                    <p className="text-xs font-semibold text-[#8b8b8b]">{item.status}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+            <div className="flex justify-end gap-4 pt-6">
+              <button
+                type="button"
+                className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#f48b2f] bg-white text-2xl text-[#f48b2f] transition hover:bg-[#f48b2f] hover:text-white shadow-lg"
+                aria-label="Sebelumnya"
+              >
+                &larr;
+              </button>
+              <button
+                type="button"
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f48b2f] text-2xl text-white transition hover:bg-[#d67d3a] shadow-xl"
+                aria-label="Selanjutnya"
+              >
+                &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -166,10 +357,10 @@ function LandingFooter() {
       </div>
       <div className="relative flex flex-col w-full max-w-6xl gap-12 px-6 mx-auto md:flex-row md:items-start md:justify-between">
         <div className="max-w-sm space-y-4">
-          <div className="flex items-center gap-3">
-            <Image src="/assets/logo.svg" alt="OptiFind" width={64} height={64} className="w-auto h-14" />
+          <div className="flex items-center gap-1">
+            <Image src="/assets/magnifier.svg" alt="OptiFind" width={40} height={40} className="w-10 h-10" />
             <p className="text-2xl font-semibold leading-tight">
-              <span className="text-white">Opti</span>
+              <span className="text-white">pti</span>
               <span className="text-[#f48b2f]">Find</span>
             </p>
           </div>
@@ -209,7 +400,7 @@ function LandingFooter() {
         </div>
       </div>
       <div className="relative mx-auto mt-10 h-px w-[90%] max-w-5xl bg-white/15" />
-      <p className="mt-6 text-xs text-center text-white/70">&copy; {currentYear} Found It! Platform. Semua hak dilindungi undang-undang.</p>
+      <p className="mt-6 text-xs text-center text-white/70">&copy; {currentYear} OptiFind! Platform. Semua hak dilindungi undang-undang.</p>
     </footer>
   );
 }
@@ -225,8 +416,7 @@ function StarIcon() {
 function HeroSection() {
   return (
     <section className="relative min-h-screen overflow-hidden hero-gradient">
-      <div className="absolute inset-0 bg-gradient-to-t from-white/5 via-white/8 to-white/20" />
-      <div className="relative mx-auto flex min-h-[calc(100vh-120px)] max-w-[1200px] flex-col-reverse items-center justify-center gap-12 px-6 pb-16 pt-36 md:flex-row md:items-center md:justify-between md:px-12 lg:px-20">
+      <div className="relative z-[2] mx-auto flex min-h-[calc(100vh-120px)] max-w-[1200px] flex-col-reverse items-center justify-center gap-12 px-6 pb-16 pt-36 md:flex-row md:items-center md:justify-between md:px-12 lg:px-20">
         <div className="max-w-xl text-center fade-up md:text-left">
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70 md:text-sm">PLATFORM OPTIFIND</p>
           <h1 className="mt-6 text-[34px] font-bold leading-tight text-white md:text-[48px]">
@@ -253,7 +443,7 @@ function HeroSection() {
         <div className="relative flex items-center justify-center w-full max-w-md md:max-w-lg">
           <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#f48b2f]/40 via-transparent to-[#4b74d7]/40 blur-3xl" />
           <Image
-            src="/assets/logo.svg"
+            src="/assets/magnifier.svg"
             alt="OptiFind Illustration"
             width={360}
             height={360}
@@ -267,28 +457,43 @@ function HeroSection() {
 }
 
 function HowItWorks() {
+  useMorphingHowItWorks();
+
   return (
-    <section id="cara-kerja" className="py-16 bg-white">
-      <div className="max-w-5xl px-6 mx-auto text-center">
-        <h2 className="text-3xl font-semibold text-[#1d1d1d] md:text-4xl">Bagaimana OptiFind Bekerja</h2>
-        <p className="mt-3 text-sm text-[#6b6b6b] md:text-base">
-          Proses sederhana dalam tiga langkah untuk membantu Anda menemukan barang yang hilang.
-        </p>
-        <div className="grid gap-6 mt-10 md:grid-cols-3">
-          {STEPS.map((step, index) => (
-            <div
-              key={step.title}
-              className={`fade-up rounded-[18px] border border-[#e6e6e6] bg-white px-6 py-8 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md ${
-                index === 1 ? "fade-up-delay-1" : index === 2 ? "fade-up-delay-2" : ""
-              }`}
-            >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#f0f5ff]">
-                {step.icon}
-              </div>
-              <h3 className="text-lg font-semibold text-[#1d1d1d]">{step.title}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-[#6b6b6b]">{step.description}</p>
-            </div>
-          ))}
+    <section id="cara-kerja" className="h-screen overflow-hidden bg-white section">
+      <div className="sticky top-0 flex items-center h-screen overflow-hidden">
+        <div className="w-full max-w-6xl px-6 mx-auto overflow-visible">
+          {/* Section Header */}
+          <header className="mb-12 text-center" data-stage-header>
+            <h2 className="text-3xl md:text-4xl font-semibold text-[#1d1d1d]">
+              Bagaimana OptiFind Bekerja
+            </h2>
+            <p className="mt-3 text-sm md:text-base text-[#6b6b6b]">
+              Proses sederhana dalam tiga langkah untuk membantu Anda menemukan barang yang hilang.
+            </p>
+          </header>
+
+          {/* Morphing Track - Cards will animate width */}
+          <div className="flex gap-6 overflow-visible track" data-track>
+            {STEPS.map((step, index) => (
+              <article
+                key={step.title}
+                className="card rounded-[18px] border border-[#e6e6e6] bg-white px-6 py-8 shadow-sm transition-all will-change-transform h-[320px] flex flex-col"
+                data-card
+                data-index={index}
+              >
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#f0f5ff]">
+                  {step.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-[#1d1d1d] mb-3">
+                  {step.title}
+                </h3>
+                <p className="text-sm leading-relaxed text-[#6b6b6b]">
+                  {step.description}
+                </p>
+              </article>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -296,36 +501,37 @@ function HowItWorks() {
 }
 
 function CommunityImpact() {
+  useImpactCountUp();
+
   return (
-    <section id="dampak" className="relative overflow-hidden bg-gradient-to-br from-[#203063] via-[#243873] to-[#142253] py-20 text-white">
-      <div
-        className="absolute inset-0 opacity-20"
-        style={{ background: "radial-gradient(circle at top left, rgba(255,255,255,0.25), transparent 60%)" }}
-      />
-      <div className="relative flex flex-col max-w-6xl gap-12 px-6 mx-auto md:flex-row md:items-center md:justify-between">
-        <div className="relative fade-up md:w-1/2">
-          <h2 className="text-4xl font-semibold leading-tight md:text-5xl">
-            <span className="text-[#f48b2f]">Dampak</span> Komunitas Kami
-          </h2>
-          <p className="mt-4 text-sm text-white/80 md:text-base">
-            Bersama membangun ekosistem kepedulian terhadap barang hilang dan temuan. Setiap laporan membawa harapan kembali kepada pemiliknya.
-          </p>
-        </div>
-        <div className="grid gap-6 md:w-1/2 md:grid-cols-3">
-          {IMPACT_STATS.map((stat, index) => (
-            <div
-              key={stat.label}
-              className={`fade-up rounded-[22px] bg-[#1f2d5c]/70 px-6 py-8 text-center shadow-xl backdrop-blur-sm transition hover:-translate-y-1 hover:shadow-2xl ${
-                index === 1 ? "fade-up-delay-1" : index === 2 ? "fade-up-delay-2" : ""
-              }`}
-            >
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f48b2f] text-[#142253] shadow-lg">
-                {stat.icon}
+    <section id="dampak" className="h-screen overflow-hidden text-white section">
+      <div className="impact-bg sticky top-0 flex h-screen items-center bg-gradient-to-br from-[#203063] via-[#28407a] to-[#142253]">
+        <div className="flex flex-col items-start w-full max-w-6xl gap-16 px-6 mx-auto md:flex-row md:items-center md:justify-between md:gap-24">
+          <div data-step className="max-w-lg">
+            <h2 className="text-5xl font-bold leading-tight md:text-6xl">
+              <span className="text-[#f48b2f]">Dampak</span>
+              <br />
+              Komunitas Kami
+            </h2>
+            <p className="mt-6 text-base text-white/80 md:text-lg">
+              Bersama membangun ekosistem kepedulian terhadap barang hilang dan temuan. Setiap laporan membawa harapan kembali kepada pemiliknya.
+            </p>
+          </div>
+          <div data-step className="grid w-full max-w-xl gap-10 md:grid-cols-3 md:gap-12">
+            {IMPACT_STATS.map((stat) => (
+              <div key={stat.label} className="flex flex-col items-center text-center">
+                <div className="stats-icon-circle flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-[#f48b2f] to-[#f5a85f] text-[#142253] shadow-xl">
+                  {stat.icon}
+                </div>
+                <div className="mt-6 text-3xl font-extrabold text-white">
+                  {stat.value === "10,000+" && <span data-counter data-to="10000" data-suffix="+">0</span>}
+                  {stat.value === "5,000+" && <span data-counter data-to="5000" data-suffix="+">0</span>}
+                  {stat.value === "97%" && <span data-counter data-to="97" data-suffix="%">0</span>}
+                </div>
+                <p className="mt-2 text-sm font-medium tracking-wide uppercase text-white/70 whitespace-nowrap">{stat.label}</p>
               </div>
-              <p className="mt-6 text-2xl font-bold text-white md:text-3xl">{stat.value}</p>
-              <p className="mt-2 text-xs font-medium tracking-wide uppercase text-white/80">{stat.label}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -334,38 +540,42 @@ function CommunityImpact() {
 
 function Testimonials() {
   return (
-    <section id="testimoni" className="relative py-20 bg-white">
+    <section id="testimoni" className="relative py-20 bg-white rounded-b-[48px]">
       <div className="mx-auto grid max-w-[1200px] gap-10 px-6 lg:grid-cols-[420px_1fr] lg:gap-16">
-        <div className="fade-up rounded-[32px] bg-gradient-to-br from-[#3d5086] to-[#2d3f6b] p-10 text-white shadow-2xl lg:-mt-20 lg:p-12">
-          <div className="space-y-8">
-            <h2 className="text-5xl font-bold leading-tight">
-              Apa kata
-              <br />
-              mereka?
-            </h2>
-            <div className="flex items-center gap-4">
-              <span className="flex items-center justify-center w-16 h-16 p-2 bg-white rounded-full shadow-lg">
-                <Image src="/assets/logo_kecil.svg" alt="OptiFind" width={48} height={48} />
-              </span>
-              <div>
-                <p className="text-xl font-bold text-white">OptiFind</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="flex gap-1 text-yellow-300">
-                    <StarIcon />
-                    <StarIcon />
-                    <StarIcon />
-                    <StarIcon />
-                    <StarIcon />
-                  </span>
-                  <span className="text-lg font-semibold text-[#f48b2f]">4.8/5</span>
+        <div className="flex flex-col gap-6">
+          <div className="fade-up rounded-[32px] bg-gradient-to-br from-[#3d5086] to-[#2d3f6b] p-12 text-white shadow-2xl lg:-mt-20 lg:p-16 min-h-[400px] flex flex-col justify-center">
+            <div className="space-y-10">
+              <h2 className="text-5xl font-bold leading-tight">
+                Apa kata
+                <br />
+                mereka?
+              </h2>
+              <div className="flex items-center gap-4">
+                <div>
+                  <div className="flex items-center gap-1">
+                    <Image src="/assets/magnifier.svg" alt="OptiFind" width={32} height={32} className="w-8 h-8" />
+                    <span className="text-xl font-bold text-white">ptiFind</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="flex gap-1 text-yellow-300">
+                      <StarIcon />
+                      <StarIcon />
+                      <StarIcon />
+                      <StarIcon />
+                      <StarIcon />
+                    </span>
+                    <span className="text-lg font-semibold text-[#f48b2f]">4.8/5</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div className="mt-12">
+          
+          {/* Feedback button now aligned vertically with blue container */}
+          <div className="flex justify-center lg:justify-start">
             <Link
               href="/feedback"
-              className="btn-glow inline-flex w-full items-center justify-center rounded-[12px] bg-[#f48b2f] px-6 py-4 text-base font-bold text-white transition hover:bg-[#d67d3a] shadow-lg hover:shadow-xl"
+              className="btn-glow inline-flex items-center justify-center rounded-[12px] bg-[#f48b2f] px-8 py-4 text-base font-bold text-white transition hover:bg-[#d67d3a] shadow-lg hover:shadow-xl w-full"
             >
               Beri Kami Feedback untuk Terus Berkembang
             </Link>
@@ -375,7 +585,7 @@ function Testimonials() {
           {TESTIMONIALS.map((item, index) => (
             <article
               key={item.name}
-              className={`fade-up rounded-[28px] bg-[#f8f9fa] px-10 py-8 shadow-lg transition hover:shadow-xl ${
+              className={`fade-up rounded-[32px] bg-[#f8f9fa] px-10 py-8 shadow-lg transition hover:shadow-xl ${
                 index === 1 ? "fade-up-delay-1" : ""
               }`}
             >
