@@ -145,8 +145,15 @@ export default function EditBarangPage() {
         setError(null);
 
         if (!user) {
-            alert("Anda harus login terlebih dahulu.");
-            router.push("/login");
+            setModalData({
+                title: "Belum Login",
+                message: "Anda harus login terlebih dahulu untuk menyimpan perubahan.",
+                onConfirm: () => {},
+                statusId: 0,
+                actionName: "",
+            });
+            setShowErrorModal(true);
+            setTimeout(() => router.push("/login"), 2000);
             return;
         }
 
@@ -182,9 +189,16 @@ export default function EditBarangPage() {
                 );
             }
 
-            alert("✅ Barang berhasil diperbarui!");
+            setModalData({
+                title: "Berhasil!",
+                message: "Barang berhasil diperbarui!",
+                onConfirm: () => {},
+                statusId: 0,
+                actionName: "",
+            });
+            setShowSuccessModal(true);
             // Tetap di halaman edit atau kembali ke riwayat
-            router.push("/riwayat-laporan");
+            setTimeout(() => router.push("/riwayat-laporan"), 1500);
         } catch (err) {
             const message =
                 err instanceof Error
