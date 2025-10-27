@@ -41,7 +41,7 @@ export async function PATCH(
     // Check if barang exists and belongs to user
     const { data: barang, error: fetchError } = await supabase
       .from("barangs")
-      .select("pelaporId")
+      .select("pelapor_id")
       .eq("id", barangId)
       .single();
 
@@ -52,7 +52,7 @@ export async function PATCH(
       );
     }
 
-    if (barang.pelaporId !== user.id) {
+    if (barang.pelapor_id !== user.id) {
       return NextResponse.json(
         { message: "Anda tidak memiliki akses untuk mengubah barang ini" },
         { status: 403 }
@@ -62,7 +62,7 @@ export async function PATCH(
     // Update status
     const { data, error } = await supabase
       .from("barangs")
-      .update({ statusId })
+      .update({ status_id: statusId })
       .eq("id", barangId)
       .select()
       .single();

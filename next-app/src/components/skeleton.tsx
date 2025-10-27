@@ -1,12 +1,6 @@
 export default function Skeleton() {
     return (
-        <div
-            className="min-h-screen w-full flex items-center justify-center px-4 py-8 overflow-hidden"
-            style={{
-                background:
-                    "linear-gradient(to top, rgb(11,39,83), rgb(14,49,105), rgb(19,64,138))",
-            }}
-        >
+        <div className="min-h-screen w-full flex items-center justify-center px-4 py-8 overflow-hidden bg-gray-50">
             <div className="w-full max-w-[900px] animate-pulse space-y-6">
                 <div className="hidden lg:block h-[600px] bg-white rounded-[20px] border border-gray-200 overflow-hidden">
                     <div className="flex h-full">

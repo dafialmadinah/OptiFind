@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Skeleton from "@/components/skeleton";
+import { useAuth } from "@/lib/auth-context";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import timezone from "dayjs/plugin/timezone";
@@ -32,7 +34,7 @@ interface Barang {
     lokasi: string | null;
     deskripsi: string | null;
     kontak: string | null;
-    pelapor: { id: string; name: string } | null;
+    pelapor: { id: string; name: string; username?: string; email?: string } | null;
     createdAt: string;
 }
 
@@ -87,6 +89,7 @@ function resolveImageSrc(foto: string | null) {
 
 export default function BarangDetailPage({ params }: Props) {
     const router = useRouter();
+    const { user } = useAuth();
     const [barang, setBarang] = useState<Barang | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -102,6 +105,31 @@ export default function BarangDetailPage({ params }: Props) {
                 return;
             }
             const data = await res.json();
+            console.log("=== BARANG DATA ===");
+            console.log("Full data:", JSON.stringify(data, null, 2));
+            console.log("Pelapor object:", data.pelapor);
+            console.log("Pelapor ID:", data.pelaporId);
+            
+            // If pelapor is null but pelaporId exists, fetch user data separately
+            if (!data.pelapor && data.pelaporId) {
+                console.log("Fetching user data separately for ID:", data.pelaporId);
+                try {
+                    const userRes = await fetch(`/api/users/${data.pelaporId}`);
+                    if (userRes.ok) {
+                        const userData = await userRes.json();
+                        console.log("Fetched user data:", userData);
+                        data.pelapor = {
+                            id: userData.id,
+                            name: userData.name,
+                            username: userData.username,
+                            email: userData.email
+                        };
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch user data:", error);
+                }
+            }
+            
             setBarang(data);
         } catch (error) {
             console.error("Error fetching barang:", error);
@@ -112,13 +140,7 @@ export default function BarangDetailPage({ params }: Props) {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 py-8">
-                <div className="container mx-auto px-4 max-w-4xl">
-                    <div className="h-96 w-full bg-gray-200 animate-pulse rounded-xl"></div>
-                </div>
-            </div>
-        );
+        return <Skeleton />;
     }
 
     if (!barang) return null;
@@ -127,6 +149,21 @@ export default function BarangDetailPage({ params }: Props) {
     const statusText = barang.status
         ? barang.status.nama
         : convertStatusIdToString(barang.statusId);
+
+    // Check if status is "selesai" (3 or 4)
+    const isStatusSelesai = barang.statusId === 3 || barang.statusId === 4;
+
+    // Get pelapor name with fallback - check for empty strings too
+    const pelaporName = 
+        (barang.pelapor?.name && barang.pelapor.name.trim() !== "") ? barang.pelapor.name :
+        (barang.pelapor?.username && barang.pelapor.username.trim() !== "") ? barang.pelapor.username :
+        (barang.pelapor?.email && barang.pelapor.email.trim() !== "") ? barang.pelapor.email.split('@')[0] :
+        "Anonim";
+
+    console.log("Pelapor name:", barang.pelapor?.name);
+    console.log("Pelapor username:", barang.pelapor?.username);
+    console.log("Pelapor email:", barang.pelapor?.email);
+    console.log("Final pelaporName:", pelaporName);
 
     const waktuDitemukan = barang.waktu
         ? dayjs(barang.waktu).format("dddd, DD-MM-YYYY")
@@ -165,17 +202,34 @@ export default function BarangDetailPage({ params }: Props) {
                         </div>
                         {barang.kontak && (
                             <div className="w-full mt-6">
-                                <Link
-                                    href={`https://wa.me/${barang.kontak.replace(
-                                        /[^0-9]/g,
-                                        ""
-                                    )}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl text-center transition-colors shadow-md"
-                                >
-                                    Hubungi Pelapor
-                                </Link>
+                                {user?.id === barang.pelapor?.id ? (
+                                    <Link
+                                        href={`/barangs/${barang.id}/edit`}
+                                        className="block w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-3 rounded-xl text-center transition-colors shadow-md"
+                                    >
+                                        Edit Laporan
+                                    </Link>
+                                ) : isStatusSelesai ? (
+                                    <button
+                                        disabled
+                                        className="block w-full bg-gray-300 text-gray-500 font-semibold py-3 rounded-xl text-center cursor-not-allowed shadow-md"
+                                        title="Barang sudah selesai, tidak bisa dihubungi"
+                                    >
+                                        Hubungi Pelapor
+                                    </button>
+                                ) : (
+                                    <Link
+                                        href={`https://wa.me/${barang.kontak.replace(
+                                            /[^0-9]/g,
+                                            ""
+                                        )}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl text-center transition-colors shadow-md"
+                                    >
+                                        Hubungi Pelapor
+                                    </Link>
+                                )}
                             </div>
                         )}
                     </div>
@@ -305,7 +359,7 @@ export default function BarangDetailPage({ params }: Props) {
                                         Nama Pelapor
                                     </p>
                                     <p className="text-base text-gray-800 mt-2">
-                                        {barang.pelapor?.name || "Anonim"}
+                                        {pelaporName}
                                     </p>
                                 </div>
                             </div>
@@ -330,17 +384,34 @@ export default function BarangDetailPage({ params }: Props) {
 
                         {barang.kontak && (
                             <div className="lg:hidden pt-4">
-                                <Link
-                                    href={`https://wa.me/${barang.kontak.replace(
-                                        /[^0-9]/g,
-                                        ""
-                                    )}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 rounded-xl text-center transition-colors"
-                                >
-                                    Hubungi Pelapor
-                                </Link>
+                                {user?.id === barang.pelapor?.id ? (
+                                    <Link
+                                        href={`/barangs/${barang.id}/edit`}
+                                        className="block w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-4 rounded-xl text-center transition-colors"
+                                    >
+                                        Edit Laporan
+                                    </Link>
+                                ) : isStatusSelesai ? (
+                                    <button
+                                        disabled
+                                        className="block w-full bg-gray-300 text-gray-500 font-semibold py-4 rounded-xl text-center cursor-not-allowed"
+                                        title="Barang sudah selesai, tidak bisa dihubungi"
+                                    >
+                                        Hubungi Pelapor
+                                    </button>
+                                ) : (
+                                    <Link
+                                        href={`https://wa.me/${barang.kontak.replace(
+                                            /[^0-9]/g,
+                                            ""
+                                        )}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 rounded-xl text-center transition-colors"
+                                    >
+                                        Hubungi Pelapor
+                                    </Link>
+                                )}
                             </div>
                         )}
                     </div>
