@@ -5,12 +5,14 @@ import { gsap, ScrollTrigger } from "@/lib/gsap";
 export function useImpactCountUp() {
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isSmallScreen = window.matchMedia("(max-width: 767px)").matches;
     const section = document.querySelector<HTMLElement>("#dampak");
     if (!section) return;
 
     const steps = section.querySelectorAll<HTMLElement>("[data-step]");
     const counters = section.querySelectorAll<HTMLElement>("[data-counter]");
     const bgElement = section.querySelector<HTMLElement>("[data-impact-bg]");
+    const shouldPin = !reduce && !isSmallScreen;
 
     // Clean up any existing ScrollTriggers
     ScrollTrigger.getAll().forEach(st => {
@@ -45,14 +47,29 @@ export function useImpactCountUp() {
     }
 
     // Create pinned timeline for section structure ONLY
-    ScrollTrigger.create({
-      trigger: section,
-      start: "top top",
-      end: "+=100%",
-      scrub: 2, // Slower, smoother scrub matching other sections
-      pin: true,
-      anticipatePin: 1,
-    });
+    if (shouldPin) {
+      ScrollTrigger.create({
+        trigger: section,
+        start: "top top",
+        end: "+=100%",
+        scrub: 2, // Slower, smoother scrub matching other sections
+        pin: true,
+        anticipatePin: 1,
+      });
+    }
+
+    // Add background parallax effect during scroll
+    if (bgElement) {
+      gsap.to(bgElement, {
+        backgroundPosition: "50% 40%",
+        scrollTrigger: {
+          trigger: section,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1.5,
+        },
+      });
+    }
 
     // Background slide in from top (from outside viewport - like falling from sky)
     ScrollTrigger.create({
@@ -78,7 +95,7 @@ export function useImpactCountUp() {
       }
     });
 
-    // Title & paragraph reveal when section enters
+    // Title & paragraph reveal when section enters with stagger
     ScrollTrigger.create({
       trigger: section,
       start: "top 80%",
@@ -88,7 +105,7 @@ export function useImpactCountUp() {
           y: 0,
           duration: 1.2,
           ease: "power2.out", // Smoother ease
-          stagger: 0.25,
+          stagger: 0.12, // Slightly faster stagger for smoother flow
           delay: 0.2
         });
         
@@ -98,7 +115,7 @@ export function useImpactCountUp() {
           autoAlpha: 1,
           duration: 1,
           ease: "power2.out", // Smoother ease
-          stagger: 0.15,
+          stagger: 0.08, // Faster stagger
           delay: 0.5
         });
       },
@@ -122,11 +139,16 @@ export function useImpactCountUp() {
       }
     });
 
-    // Counter animations - start when section is in view
+    // Counter animations - start when section is in view (ONCE ONLY)
+    let counterAnimated = false; // Flag to ensure animation runs only once
+    
     ScrollTrigger.create({
       trigger: section,
       start: "top 60%",
       onEnter: () => {
+        if (counterAnimated) return; // Skip if already animated
+        counterAnimated = true; // Set flag
+        
         counters.forEach((el, i) => {
           const to = Number(el.getAttribute("data-to") || "0");
           const suffix = el.getAttribute("data-suffix") || "";
@@ -144,11 +166,7 @@ export function useImpactCountUp() {
           });
         });
       },
-      onLeaveBack: () => {
-        counters.forEach(el => {
-          gsap.set(el, { textContent: "0" });
-        });
-      }
+      // Remove onLeaveBack to prevent reset when scrolling back
     });
 
     return () => {

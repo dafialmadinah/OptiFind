@@ -19,13 +19,31 @@ export function HomeSplashScreen() {
       const tl = gsap.timeline({
         onComplete: () => {
           sessionStorage.setItem("homeSplashShown", "true");
-          // Fade out splash screen
-          gsap.to(".home-splash-screen", {
-            opacity: 0,
-            duration: 0.8,
-            ease: "power2.inOut",
+          
+          // EFEK MEMBUKA LAYAR (curtain terbuka ke kiri & kanan)
+          const curtainTimeline = gsap.timeline({
             onComplete: () => setIsVisible(false),
           });
+
+          curtainTimeline
+            // Curtain kiri dan kanan terbuka
+            .to(".splash-curtain-left", {
+              xPercent: -100, // Geser ke kiri keluar viewport
+              duration: 1.2,
+              ease: "power3.inOut",
+            }, 0)
+            .to(".splash-curtain-right", {
+              xPercent: 100, // Geser ke kanan keluar viewport
+              duration: 1.2,
+              ease: "power3.inOut",
+            }, 0)
+            // Content fade out sambil scale up
+            .to(".home-splash-content", {
+              opacity: 0,
+              scale: 1.3,
+              duration: 0.8,
+              ease: "power2.in",
+            }, 0);
         },
       });
 
@@ -79,16 +97,15 @@ export function HomeSplashScreen() {
   if (!isVisible) return null;
 
   return (
-    <div className="home-splash-screen fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-[#4269d3] via-[#2a4190] to-[#142253]">
-      {/* Animated background particles */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#f48b2f]/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-blue-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-purple-500/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: "0.5s" }} />
-      </div>
+    <div className="home-splash-screen fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden pointer-events-none">
+      {/* Curtain Kiri (setengah kiri layar) */}
+      <div className="splash-curtain-left absolute top-0 left-0 bottom-0 w-1/2 bg-gradient-to-r from-[#4269d3] via-[#2a4190] to-[#1a2d5e] z-20 pointer-events-auto" />
+      
+      {/* Curtain Kanan (setengah kanan layar) */}
+      <div className="splash-curtain-right absolute top-0 right-0 bottom-0 w-1/2 bg-gradient-to-l from-[#4269d3] via-[#2a4190] to-[#1a2d5e] z-20 pointer-events-auto" />
 
-      {/* Main content */}
-      <div className="relative z-10 flex flex-col items-center gap-8 px-6">
+      {/* Main content (di atas curtain) */}
+      <div className="home-splash-content relative z-30 flex flex-col items-center gap-8 px-6 pointer-events-none">
         {/* Logo */}
         <div className="home-splash-logo relative">
           {/* Glow effect */}

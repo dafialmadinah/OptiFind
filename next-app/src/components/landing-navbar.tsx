@@ -8,6 +8,24 @@ export function LandingNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const offset = 80; // Offset untuk navbar
+      const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({
+        top: elementPosition - offset,
+        behavior: "smooth"
+      });
+    } else if (sectionId === "beranda") {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    }
+    setMenuOpen(false);
+  };
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     handleScroll();
@@ -30,15 +48,18 @@ export function LandingNavbar() {
         </Link>
 
         <nav className="items-center hidden gap-6 text-sm font-semibold md:flex">
-          <Link href="/#cara-kerja" className="text-white/90 hover:text-orange-400 transition-colors">
+          <button onClick={() => scrollToSection("beranda")} className="text-white/90 hover:text-orange-400 transition-colors">
+            Beranda
+          </button>
+          <button onClick={() => scrollToSection("cara-kerja")} className="text-white/90 hover:text-orange-400 transition-colors">
             Cara Kerja
-          </Link>
-          <Link href="/#dampak" className="text-white/90 hover:text-orange-400 transition-colors">
+          </button>
+          <button onClick={() => scrollToSection("dampak")} className="text-white/90 hover:text-orange-400 transition-colors">
             Dampak
-          </Link>
-          <Link href="/#testimoni" className="text-white/90 hover:text-orange-400 transition-colors">
+          </button>
+          <button onClick={() => scrollToSection("testimoni")} className="text-white/90 hover:text-orange-400 transition-colors">
             Testimoni
-          </Link>
+          </button>
         </nav>
 
         <div className="items-center hidden gap-3 md:flex">
@@ -75,27 +96,30 @@ export function LandingNavbar() {
 
       {menuOpen && (
         <div className="pointer-events-auto absolute top-full mt-3 w-full max-w-4xl rounded-2xl bg-gray-900/40 backdrop-blur-md p-4 text-white shadow-lg md:hidden">
-          <Link
-            href="/#cara-kerja"
-            onClick={() => setMenuOpen(false)}
-            className="block rounded-lg px-3 py-2 text-sm font-semibold text-white hover:text-orange-400 transition"
+          <button
+            onClick={() => scrollToSection("beranda")}
+            className="block w-full text-left rounded-lg px-3 py-2 text-sm font-semibold text-white hover:text-orange-400 transition"
+          >
+            Beranda
+          </button>
+          <button
+            onClick={() => scrollToSection("cara-kerja")}
+            className="block w-full text-left rounded-lg px-3 py-2 text-sm font-semibold text-white hover:text-orange-400 transition"
           >
             Cara Kerja
-          </Link>
-          <Link
-            href="/#dampak"
-            onClick={() => setMenuOpen(false)}
-            className="block rounded-lg px-3 py-2 text-sm font-semibold text-white hover:text-orange-400 transition"
+          </button>
+          <button
+            onClick={() => scrollToSection("dampak")}
+            className="block w-full text-left rounded-lg px-3 py-2 text-sm font-semibold text-white hover:text-orange-400 transition"
           >
             Dampak
-          </Link>
-          <Link
-            href="/#testimoni"
-            onClick={() => setMenuOpen(false)}
-            className="block rounded-lg px-3 py-2 text-sm font-semibold text-white hover:text-orange-400 transition"
+          </button>
+          <button
+            onClick={() => scrollToSection("testimoni")}
+            className="block w-full text-left rounded-lg px-3 py-2 text-sm font-semibold text-white hover:text-orange-400 transition"
           >
             Testimoni
-          </Link>
+          </button>
           <div className="h-px my-2 bg-white/20" />
           <div className="flex flex-col gap-2">
             <Link

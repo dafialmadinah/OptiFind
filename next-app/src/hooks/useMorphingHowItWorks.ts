@@ -6,27 +6,32 @@ export function useMorphingHowItWorks() {
   useEffect(() => {
     // Check for reduced motion preference
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isSmallScreen = window.matchMedia("(max-width: 767px)").matches;
 
     const section = document.querySelector("#cara-kerja") as HTMLElement;
     const cards = gsap.utils.toArray<HTMLElement>("#cara-kerja [data-card]");
 
     if (!section || cards.length !== 3) return;
 
-    // Add hidden class initially
-    section.classList.add("section-hidden");
+    const useStaticLayout = prefersReducedMotion || isSmallScreen;
 
-    if (prefersReducedMotion) {
+    if (useStaticLayout) {
       // Static layout: show all 3 cards equally
       gsap.set(cards, {
         opacity: 1,
         filter: "blur(0px)",
-        flex: "1 1 33.333%",
+        x: 0,
+        flex: prefersReducedMotion && !isSmallScreen ? "1 1 33.333%" : "1 1 100%",
         backgroundColor: "#ffffff",
+        color: "#1d1d1d",
       });
       // Reveal the section
       section.classList.remove("section-hidden");
       return;
     }
+
+    // Add hidden class initially
+    section.classList.add("section-hidden");
 
     // INITIAL STATE: All cards collapsed and hidden far to the RIGHT
     gsap.set(cards, {
@@ -41,13 +46,13 @@ export function useMorphingHowItWorks() {
     // Reveal the section right before creating the timeline
     section.classList.remove("section-hidden");
 
-    // Create main timeline with pinning - smoother scrub
+    // Create main timeline with pinning - smoother scrub and longer duration
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: section,
         start: "top top",
-        end: "+=400%", // 4 stages
-        scrub: 2, // Slower, smoother scrub for more fluid transitions
+        end: "+=500%", // Longer duration = smoother transitions
+        scrub: 3, // Higher scrub = smoother, less choppy
         pin: true,
         anticipatePin: 1,
       },
@@ -63,8 +68,8 @@ export function useMorphingHowItWorks() {
         flex: "1 1 90%",
         backgroundColor: "#f48b2f",
         color: "#ffffff",
-        duration: 1,
-        ease: "power1.inOut", // Consistent smooth ease
+        duration: 1.5, // Longer duration for smoother animation
+        ease: "power2.inOut", // Smoother ease curve
       },
       0
     );
@@ -76,23 +81,23 @@ export function useMorphingHowItWorks() {
         flex: "1 1 38%",
         backgroundColor: "#ffffff",
         color: "#1d1d1d",
-        duration: 1,
-        ease: "power1.inOut", // Consistent smooth ease
+        duration: 1.5,
+        ease: "power2.inOut",
       },
-      1
+      1.5
     ).to(
       cards[1],
       {
-        x: 0, // Slide dari kanan jauh ke posisi normal
+        x: 0,
         opacity: 1,
         filter: "blur(0px)",
         flex: "1 1 58%",
         backgroundColor: "#f48b2f",
         color: "#ffffff",
-        duration: 1,
-        ease: "power1.inOut", // Consistent smooth ease
+        duration: 1.5,
+        ease: "power2.inOut",
       },
-      1
+      1.5
     );
 
     // STAGE 3: Cards 0-1 shrink + white, Terhubung Aman slides from RIGHT
@@ -100,10 +105,10 @@ export function useMorphingHowItWorks() {
       cards[0],
       {
         flex: "1 1 31%",
-        duration: 1,
-        ease: "power1.inOut", // Consistent smooth ease
+        duration: 1.5,
+        ease: "power2.inOut",
       },
-      2
+      3
     )
     .to(
       cards[1],
@@ -111,24 +116,24 @@ export function useMorphingHowItWorks() {
         flex: "1 1 31%",
         backgroundColor: "#ffffff",
         color: "#1d1d1d",
-        duration: 1,
-        ease: "power1.inOut", // Consistent smooth ease
+        duration: 1.5,
+        ease: "power2.inOut",
       },
-      2
+      3
     )
     .to(
       cards[2],
       {
-        x: 0, // Slide dari kanan jauh ke posisi normal
+        x: 0,
         opacity: 1,
         filter: "blur(0px)",
         flex: "1 1 34%",
         backgroundColor: "#f48b2f",
         color: "#ffffff",
-        duration: 1,
-        ease: "power1.inOut", // Consistent smooth ease
+        duration: 1.5,
+        ease: "power2.inOut",
       },
-      2
+      3
     );
 
     // STAGE 4: All cards equal + white
@@ -138,10 +143,10 @@ export function useMorphingHowItWorks() {
         flex: "1 1 33.333%",
         backgroundColor: "#ffffff",
         color: "#1d1d1d",
-        duration: 1,
-        ease: "power1.inOut", // Consistent smooth ease
+        duration: 1.5,
+        ease: "power2.inOut",
       },
-      3
+      4.5
     );
 
     // Cleanup

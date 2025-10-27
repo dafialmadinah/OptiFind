@@ -2,14 +2,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactElement } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { LandingNavbar } from "@/components/landing-navbar";
 import { HomeSplashScreen } from "@/components/home-splash-screen";
-import { FooterUnderlay } from "@/components/FooterUnderlay";
 import { useMorphingHowItWorks } from "@/hooks/useMorphingHowItWorks";
 import { useImpactCountUp } from "@/hooks/useImpactCountUp";
-import { useFooterReveal } from "@/hooks/useFooterReveal";
+import type { LucideIcon } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
 
 type Step = {
   title: string;
@@ -120,6 +120,13 @@ const TESTIMONIALS: Testimonial[] = [
       "Saya menemukan tas seseorang dan bisa mengembalikannya dengan mudah melalui OptiFind. Platform ini wajib ada di setiap kampus.",
     status: "Barang Temuan -> (Telah dikembalikan)",
   },
+];
+
+const SOCIAL_LINKS: ReadonlyArray<{ label: string; href: string; Icon: LucideIcon }> = [
+  { label: "Facebook", href: "https://facebook.com", Icon: Facebook },
+  { label: "Instagram", href: "https://instagram.com", Icon: Instagram },
+  { label: "Twitter", href: "https://twitter.com", Icon: Twitter },
+  { label: "LinkedIn", href: "https://linkedin.com", Icon: Linkedin },
 ];
 
 const HERO_SELECTORS = {
@@ -301,171 +308,166 @@ function useMagneticButtons() {
 }
 
 // Curtain effect for Testimonials section - animate the blue background
-function useCurtainTestimonials(coverRef: React.RefObject<HTMLDivElement>) {
-  useEffect(() => {
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduceMotion || !coverRef.current) return;
-
-    const ctx = gsap.context(() => {
-      const cover = coverRef.current;
-      if (!cover) return;
-
-      // Target the blue background overlay inside the card
-      const curtainBg = cover.querySelector<HTMLElement>("[data-curtain-bg]");
-      if (!curtainBg) return;
-
-      // Initial state: background hidden above (like curtain rolled up)
-      gsap.set(curtainBg, { yPercent: -100 });
-
-      // Background drops down from top (like a curtain unrolling)
-      gsap.to(curtainBg, {
-        yPercent: 0,
-        scrollTrigger: {
-          trigger: cover,
-          start: "top 80%",
-          end: "top 40%",
-          scrub: 2,
-        },
-        ease: "power2.out",
-      });
-    });
-
-    return () => {
-      ctx.revert();
-    };
-  }, [coverRef]);
-}
-
 export default function LandingPage() {
   useLandingAnimations();
   useMagneticButtons();
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
-      {/* Fixed footer at bottom, behind everything */}
-      <FooterUnderlay />
-      
-      {/* Main content above footer */}
-      <main className="relative z-10">
-        <HomeSplashScreen />
-        <div className="bg-[#f2f5ff] text-slate-900">
-          <LandingNavbar />
-          <HeroSection />
-          <HowItWorks />
-          <CommunityImpact />
-        </div>
-        <TestimonialsWithFooterReveal />
-      </main>
+    <div className="min-h-screen overflow-x-hidden bg-[#f2f5ff] text-slate-900">
+      <HomeSplashScreen />
+      <LandingNavbar />
+      <HeroSection />
+      <HowItWorks />
+      <CommunityImpact />
+      <TestimonialsSection />
+      <MobileFooter />
     </div>
   );
 }
 
-function TestimonialsWithFooterReveal() {
-  const { sectionRef, coverRef } = useFooterReveal();
-  useCurtainTestimonials(coverRef);
-
+function TestimonialsSection() {
   return (
-    <section ref={sectionRef} className="relative py-20 sm:py-24 md:h-screen md:py-0" id="testimoni">
-      {/* Cover layer with testimonials - will slide up to reveal footer */}
-      <div ref={coverRef} className="relative w-full overflow-hidden bg-white shadow-2xl cover md:min-h-screen">
-        <div className="relative z-10 mx-auto grid w-full max-w-[1200px] gap-10 px-5 py-14 sm:px-6 sm:py-16 md:px-10 md:py-20 lg:grid-cols-[420px_1fr] lg:gap-16">
-          <div className="flex flex-col gap-6">
-            {/* Card "Apa kata mereka" - background biru turun seperti curtain */}
-            <div 
-              className="relative flex min-h-[360px] flex-col justify-center overflow-hidden rounded-b-3xl p-10 text-white shadow-2xl transition-all duration-300 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] sm:p-12 lg:-mt-20 lg:p-16"
-            >
-              {/* Background biru yang turun dari atas seperti curtain */}
-              <div 
-                data-curtain-bg
-                className="absolute inset-0 bg-gradient-to-br from-[#3d5086] to-[#2d3f6b] origin-top"
-              />
-              
-              {/* Konten di atas background */}
-              <div className="relative z-10 space-y-10">
-                <h2 className="text-[32px] md:text-[40px] leading-[1.1] font-bold text-white">
-                  Apa kata
-                  <br />
-                  mereka?
-                </h2>
-                <div className="flex items-center gap-4">
-                  <div>
-                    <div className="flex items-center gap-1">
-                      <Image src="/assets/magnifier.svg" alt="OptiFind" width={32} height={32} className="w-8 h-8" />
-                      <span className="text-xl font-bold text-white">ptiFind</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="flex gap-1 text-yellow-300">
-                        <StarIcon />
-                        <StarIcon />
-                        <StarIcon />
-                        <StarIcon />
-                        <StarIcon />
-                      </span>
-                      <span className="text-lg font-semibold text-[#f48b2f]">4.8/5</span>
-                    </div>
-                  </div>
-                </div>
+    <section id="testimoni" className="bg-white px-5 py-16 sm:px-6 sm:py-20">
+      <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-10">
+        <div className="rounded-3xl bg-gradient-to-br from-[#3d5086] to-[#2d3f6b] p-10 text-white shadow-2xl sm:p-12">
+          <div className="space-y-8">
+            <h2 className="text-[30px] leading-[1.1] font-bold sm:text-[34px]">Apa kata mereka?</h2>
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+              <div className="flex items-center gap-2">
+                <Image src="/assets/magnifier.svg" alt="OptiFind" width={34} height={34} className="h-8 w-8" />
+                <span className="text-2xl font-semibold">
+                  <span className="text-white">Opti</span>
+                  <span className="text-[#f48b2f]">Find</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-3 rounded-full bg-white/10 px-4 py-2 text-sm">
+                <span className="flex gap-1 text-yellow-300">
+                  <StarIcon />
+                  <StarIcon />
+                  <StarIcon />
+                  <StarIcon />
+                  <StarIcon />
+                </span>
+                <span className="font-semibold text-[#f5a85f]">4.8/5</span>
               </div>
             </div>
-            
-            <div className="flex justify-center lg:justify-start">
-              <Link
-                href="/feedback"
-                className="inline-flex w-full items-center justify-center rounded-[20px] bg-[#f48b2f] px-8 py-4 text-base font-bold text-white transition-all duration-200 hover:scale-[1.02] hover:bg-[#d67d3a] shadow-lg hover:shadow-xl sm:w-auto"
-              >
-                Beri Kami Feedback untuk Terus Berkembang
-              </Link>
-            </div>
+            <p className="text-white/80 text-sm leading-relaxed sm:text-base">
+              Cerita nyata dari pengguna yang berhasil menemukan barangnya kembali dan menjaga kepercayaan komunitas.
+            </p>
           </div>
-          <div className="space-y-6">
-            {TESTIMONIALS.map((item, index) => (
-              <article
-                key={item.name}
-                className={`rounded-[20px] bg-[#f8f9fa] px-6 py-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl sm:px-8 md:px-10 ${
-                  index === 1 ? "fade-up-delay-1" : ""
-                }`}
-              >
-                <div className="flex items-start gap-5">
-                  <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#f48b2f] to-[#f5a85f] text-2xl font-bold text-white shadow-lg">
-                    {item.name.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-[22px] md:text-[24px] leading-[1.2] font-semibold text-[#3d5086]">{item.name}</h3>
-                      <span className="flex gap-1 text-yellow-400">
-                        <StarIcon />
-                        <StarIcon />
-                        <StarIcon />
-                        <StarIcon />
-                        <StarIcon />
-                      </span>
-                    </div>
-                    <p className="mb-4 text-[16px] md:text-[17px] leading-[1.7] text-slate-600">{item.quote}</p>
-                    <p className="uppercase tracking-[0.22em] text-xs text-slate-500">{item.status}</p>
-                  </div>
+        </div>
+
+        <div className="space-y-6">
+          {TESTIMONIALS.map((item, index) => (
+            <article
+              key={item.name}
+              className={`rounded-[20px] border border-slate-100 bg-[#f8f9fa] px-6 py-7 shadow-sm transition-all duration-200 sm:px-8 sm:py-8 ${
+                index === 1 ? "fade-up-delay-1" : ""
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#f48b2f] to-[#f5a85f] text-xl font-bold text-white shadow-lg">
+                  {item.name.charAt(0)}
                 </div>
-              </article>
-            ))}
-            <div className="flex justify-end gap-4 pt-6">
-              <button
-                type="button"
-                className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#f48b2f] bg-white text-2xl text-[#f48b2f] transition-all duration-200 hover:bg-[#f48b2f] hover:text-white shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-                aria-label="Sebelumnya"
-              >
-                &larr;
-              </button>
-              <button
-                type="button"
-                className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f48b2f] text-2xl text-white transition-all duration-200 hover:bg-[#d67d3a] shadow-xl hover:scale-[1.02] active:scale-[0.98]"
-                aria-label="Selanjutnya"
-              >
-                &rarr;
-              </button>
+                <div className="flex-1 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                    <h3 className="text-[20px] font-semibold text-[#3d5086] sm:text-[22px]">{item.name}</h3>
+                    <span className="flex gap-1 text-yellow-400">
+                      <StarIcon />
+                      <StarIcon />
+                      <StarIcon />
+                      <StarIcon />
+                      <StarIcon />
+                    </span>
+                  </div>
+                  <p className="text-[15px] leading-[1.6] text-slate-600 sm:text-[16px]">{item.quote}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{item.status}</p>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="flex flex-col items-center gap-4 rounded-2xl bg-[#f2f5ff] p-6 text-center sm:flex-row sm:justify-between sm:p-8">
+          <h3 className="text-lg font-semibold text-[#1d2d5a] sm:text-xl">Punya cerita? Bantu kami berkembang.</h3>
+          <Link
+            href="/feedback"
+            className="inline-flex items-center justify-center rounded-[18px] bg-[#f48b2f] px-6 py-3 text-sm font-bold text-white transition-all duration-200 hover:scale-[1.02] hover:bg-[#d67d3a] shadow-lg hover:shadow-xl"
+          >
+            Beri Feedback
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MobileFooter() {
+  const currentYear = new Date().getFullYear();
+
+  return (
+    <footer className="bg-gradient-to-br from-[#1a2d68] via-[#1e3675] to-[#223f8a] px-6 py-12 text-white sm:px-8 sm:py-14">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-10">
+        <div>
+          <div className="flex items-center gap-2">
+            <Image src="/assets/magnifier.svg" alt="OptiFind" width={32} height={32} className="h-9 w-9" />
+            <span className="text-2xl font-semibold">
+              <span className="text-white">Opti</span>
+              <span className="text-[#f48b2f]">Find</span>
+            </span>
+          </div>
+          <p className="mt-3 max-w-sm text-sm text-white/70">
+            Solusi terpadu untuk melaporkan barang hilang dan menemukan pemiliknya kembali dengan cepat.
+          </p>
+        </div>
+
+        <div className="grid gap-6 text-sm text-white/75 sm:grid-cols-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Navigasi</p>
+            <ul className="mt-3 space-y-2">
+              <li>
+                <Link href="/tentang" className="transition hover:text-white">
+                  Tentang Kami
+                </Link>
+              </li>
+              <li>
+                <Link href="/fitur" className="transition hover:text-white">
+                  Fitur Platform
+                </Link>
+              </li>
+              <li>
+                <Link href="/kontak" className="transition hover:text-white">
+                  Hubungi Kami
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="transition hover:text-white">
+                  Kebijakan Privasi
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/80">Ikuti Kami</p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              {SOCIAL_LINKS.map(({ label, href, Icon }) => (
+                <Link
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white hover:text-[#1a2d68]"
+                >
+                  <Icon className="h-4 w-4" />
+                </Link>
+              ))}
             </div>
           </div>
         </div>
       </div>
-    </section>
+      <p className="mt-10 text-center text-xs text-white/60">&copy; {currentYear} OptiFind. Semua hak dilindungi.</p>
+    </footer>
   );
 }
 
@@ -479,35 +481,35 @@ function StarIcon() {
 
 function HeroSection() {
   return (
-    <section id="beranda" className="relative h-screen overflow-hidden" data-hero>
+    <section id="beranda" className="relative overflow-hidden md:min-h-screen" data-hero>
       {/* Parallax gradient background */}
       <div 
         className="hero-gradient absolute inset-0 bg-gradient-to-br from-[#203063] via-[#28407a] to-[#142253]"
         style={{ backgroundSize: "150% 150%", backgroundPosition: "50% 50%" }}
       />
       
-      <div className="relative z-[2] mx-auto flex h-full w-full max-w-[1200px] flex-col-reverse items-center justify-center gap-10 px-6 sm:gap-12 sm:px-8 md:flex-row md:gap-16 md:px-12 lg:px-20">
-        <div className="max-w-xl md:flex-1">
+      <div className="relative z-[2] mx-auto flex w-full max-w-[1200px] flex-col-reverse items-center justify-center gap-10 px-6 pb-20 pt-28 sm:gap-12 sm:px-8 md:h-full md:flex-row md:items-center md:justify-between md:px-12 md:pb-24 md:pt-32 lg:px-20">
+        <div className="max-w-xl text-center md:text-left">
           <p 
-            className="uppercase tracking-[0.22em] text-xs text-white/70 text-center md:text-left" 
+            className="uppercase tracking-[0.22em] text-xs text-white/70" 
             data-hero-subtitle
           >
             PLATFORM OPTIFIND
           </p>
           <h1
-            className="mt-6 text-[40px] sm:text-[48px] md:text-[56px] leading-[1.05] tracking-[-0.02em] font-extrabold text-white text-center md:text-left"
+            className="mt-6 text-[40px] md:text-[56px] leading-[1.05] tracking-[-0.02em] font-extrabold text-white"
             data-hero-headline
           >
             Temukan Barangmu,
             <span className="text-[#f48b2f]"> Bantu Orang Lain Menemukan Miliknya</span>
           </h1>
           <p 
-            className="mt-5 text-[16px] md:text-[17px] leading-[1.7] text-white/85 text-center md:text-left" 
+            className="mt-5 text-[16px] md:text-[17px] leading-[1.7] text-white/85" 
             data-hero-copy
           >
             Platform untuk melapor dan menemukan barang hilang di sekitar Anda dengan pencarian pintar dan koneksi komunitas.
           </p>
-          <div className="flex flex-col gap-3 mt-10 sm:flex-row sm:items-center sm:justify-center md:justify-start">
+          <div className="flex flex-col gap-3 mt-10 sm:flex-row sm:items-center">
             <Link
               href="/barangs/lapor-hilang"
               className="inline-flex items-center justify-center rounded-[20px] bg-[#f48b2f] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#dd7926] sm:min-w-[190px] shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
@@ -527,16 +529,16 @@ function HeroSection() {
           </div>
         </div>
         <div 
-          className="relative flex items-center justify-center w-full md:flex-1 will-change-transform" 
+          className="relative flex items-center justify-center w-full max-w-md md:max-w-lg will-change-transform" 
           data-hero-visual
         >
           <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#f48b2f]/40 via-transparent to-[#4b74d7]/40 blur-3xl" />
           <Image
             src="/assets/magnifier.svg"
             alt="OptiFind Illustration"
-            width={400}
-            height={400}
-            className="floating relative h-auto w-3/4 max-w-[300px] drop-shadow-2xl md:max-w-[400px]"
+            width={360}
+            height={360}
+            className="floating relative h-auto w-3/4 max-w-[320px] drop-shadow-2xl md:w-full"
             priority
           />
         </div>

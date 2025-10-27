@@ -73,7 +73,16 @@ a {
 }
 
 .hero-gradient {
-  background: linear-gradient(180deg, #193a6f 0%, #3b66ac 55%, #ffffff 100%);
+  background: linear-gradient(
+    180deg,
+    #1c2f66 0%,
+    #28407a 38%,
+    #3c5dad 58%,
+    #dfe4ff 76%,
+    #f4f7ff 88%,
+    #ffffff 96%,
+    #ffffff 100%
+  );
 }
 
 .floating {

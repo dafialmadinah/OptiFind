@@ -1,8 +1,8 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactElement } from "react";
-import { useEffect, useRef } from "react";
+import type { ReactElement, RefObject } from "react";
+import { useEffect } from "react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { LandingNavbar } from "@/components/landing-navbar";
 import { HomeSplashScreen } from "@/components/home-splash-screen";
@@ -301,7 +301,7 @@ function useMagneticButtons() {
 }
 
 // Curtain effect for Testimonials section - animate the blue background
-function useCurtainTestimonials(coverRef: React.RefObject<HTMLDivElement>) {
+function useCurtainTestimonials(coverRef: RefObject<HTMLDivElement>) {
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion || !coverRef.current) return;
@@ -372,7 +372,7 @@ function TestimonialsWithFooterReveal() {
           <div className="flex flex-col gap-6">
             {/* Card "Apa kata mereka" - background biru turun seperti curtain */}
             <div 
-              className="relative flex min-h-[360px] flex-col justify-center overflow-hidden rounded-b-3xl p-10 text-white shadow-2xl transition-all duration-300 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] sm:p-12 lg:-mt-20 lg:p-16"
+              className="flex min-h-[360px] flex-col justify-center overflow-hidden rounded-b-3xl p-10 text-white shadow-2xl transition-all duration-300 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] sm:p-12 lg:-mt-20 lg:p-16"
             >
               {/* Background biru yang turun dari atas seperti curtain */}
               <div 
@@ -479,35 +479,35 @@ function StarIcon() {
 
 function HeroSection() {
   return (
-    <section id="beranda" className="relative h-screen overflow-hidden" data-hero>
+    <section id="beranda" className="relative overflow-hidden md:min-h-screen" data-hero>
       {/* Parallax gradient background */}
       <div 
         className="hero-gradient absolute inset-0 bg-gradient-to-br from-[#203063] via-[#28407a] to-[#142253]"
         style={{ backgroundSize: "150% 150%", backgroundPosition: "50% 50%" }}
       />
       
-      <div className="relative z-[2] mx-auto flex h-full w-full max-w-[1200px] flex-col-reverse items-center justify-center gap-10 px-6 sm:gap-12 sm:px-8 md:flex-row md:gap-16 md:px-12 lg:px-20">
-        <div className="max-w-xl md:flex-1">
+      <div className="relative z-[2] mx-auto flex w-full max-w-[1200px] flex-col-reverse items-center justify-center gap-10 px-6 pb-20 pt-28 sm:gap-12 sm:px-8 md:h-full md:flex-row md:items-center md:justify-between md:px-12 md:pb-24 md:pt-32 lg:px-20">
+        <div className="max-w-xl text-center md:text-left">
           <p 
-            className="uppercase tracking-[0.22em] text-xs text-white/70 text-center md:text-left" 
+            className="uppercase tracking-[0.22em] text-xs text-white/70" 
             data-hero-subtitle
           >
             PLATFORM OPTIFIND
           </p>
           <h1
-            className="mt-6 text-[40px] sm:text-[48px] md:text-[56px] leading-[1.05] tracking-[-0.02em] font-extrabold text-white text-center md:text-left"
+            className="mt-6 text-[40px] md:text-[56px] leading-[1.05] tracking-[-0.02em] font-extrabold text-white"
             data-hero-headline
           >
             Temukan Barangmu,
             <span className="text-[#f48b2f]"> Bantu Orang Lain Menemukan Miliknya</span>
           </h1>
           <p 
-            className="mt-5 text-[16px] md:text-[17px] leading-[1.7] text-white/85 text-center md:text-left" 
+            className="mt-5 text-[16px] md:text-[17px] leading-[1.7] text-white/85" 
             data-hero-copy
           >
             Platform untuk melapor dan menemukan barang hilang di sekitar Anda dengan pencarian pintar dan koneksi komunitas.
           </p>
-          <div className="flex flex-col gap-3 mt-10 sm:flex-row sm:items-center sm:justify-center md:justify-start">
+          <div className="flex flex-col gap-3 mt-10 sm:flex-row sm:items-center">
             <Link
               href="/barangs/lapor-hilang"
               className="inline-flex items-center justify-center rounded-[20px] bg-[#f48b2f] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#dd7926] sm:min-w-[190px] shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
@@ -527,16 +527,16 @@ function HeroSection() {
           </div>
         </div>
         <div 
-          className="relative flex items-center justify-center w-full md:flex-1 will-change-transform" 
+          className="relative flex items-center justify-center w-full max-w-md md:max-w-lg will-change-transform" 
           data-hero-visual
         >
           <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#f48b2f]/40 via-transparent to-[#4b74d7]/40 blur-3xl" />
           <Image
             src="/assets/magnifier.svg"
             alt="OptiFind Illustration"
-            width={400}
-            height={400}
-            className="floating relative h-auto w-3/4 max-w-[300px] drop-shadow-2xl md:max-w-[400px]"
+            width={360}
+            height={360}
+            className="floating relative h-auto w-3/4 max-w-[320px] drop-shadow-2xl md:w-full"
             priority
           />
         </div>
