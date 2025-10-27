@@ -356,7 +356,7 @@ GET /api/statuses
   "errors": {
     "fieldErrors": {
       "email": ["Email tidak valid"],
-      "password": ["Password minimal 6 karakter"]
+      "password": ["Password minimal 8 karakter"]
     }
   }
 }

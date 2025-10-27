@@ -14,7 +14,7 @@ const registerSchema = z.object({
   name: z.string().min(1, "Nama wajib diisi"),
   email: z.string().email("Email tidak valid"),
   no_telepon: z.string().min(10, "Nomor telepon tidak valid"),
-  password: z.string().min(6, "Password minimal 6 karakter"),
+  password: z.string().min(8, "Password minimal 8 karakter"),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;

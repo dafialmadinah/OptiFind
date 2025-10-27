@@ -27,7 +27,7 @@ export function PublicNavbar() {
                 <div className="flex items-center justify-between gap-4">
                     {/* Logo */}
                     <Link
-                        href={user ? "/dashboard" : "/"}
+                        href={user ? "/barangs" : "/"}
                         className="flex items-center gap-2 flex-shrink-0"
                     >
                         <div className="px-2 flex items-center justify-center">
