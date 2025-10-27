@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactElement } from "react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 import { LandingNavbar } from "@/components/landing-navbar";
 import { HomeSplashScreen } from "@/components/home-splash-screen";
@@ -134,7 +134,6 @@ const HERO_SELECTORS = {
 function useLandingAnimations() {
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduceMotion) return;
 
     const ctx = gsap.context(() => {
       const hero = document.querySelector<HTMLElement>("[data-hero]");
@@ -146,56 +145,84 @@ function useLandingAnimations() {
         const secondaryCta = hero.querySelector<HTMLElement>(HERO_SELECTORS.secondaryCta);
         const visual = hero.querySelector<HTMLElement>(HERO_SELECTORS.visual);
 
-        [subtitle, headline, copy, primaryCta, secondaryCta].forEach((el) => {
-          if (el) gsap.set(el, { autoAlpha: 0, y: 32 });
-        });
+        if (reduceMotion) {
+          // Simple fade-in for reduced motion
+          [subtitle, headline, copy, primaryCta, secondaryCta, visual].forEach((el) => {
+            if (el) gsap.set(el, { autoAlpha: 1 });
+          });
+        } else {
+          // Initial set for on-load animation
+          [subtitle, headline, copy, primaryCta, secondaryCta].forEach((el) => {
+            if (el) gsap.set(el, { autoAlpha: 0, y: 32 });
+          });
 
-        if (visual) {
-          gsap.set(visual, { autoAlpha: 0, y: 40, scale: 0.95 });
+          if (visual) {
+            gsap.set(visual, { autoAlpha: 0, y: 40, scale: 0.95 });
+          }
+
+          // On-load sequence (staggered entrance)
+          const heroTimeline = gsap.timeline({
+            scrollTrigger: {
+              trigger: hero,
+              start: "top 75%",
+              once: true,
+            },
+          });
+
+          if (subtitle)
+            heroTimeline.to(subtitle, { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" }, 0);
+          if (headline)
+            heroTimeline.to(
+              headline,
+              { autoAlpha: 1, y: 0, duration: 1, ease: "power2.out" },
+              "<+=0.15"
+            );
+          if (copy)
+            heroTimeline.to(
+              copy,
+              { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" },
+              "<+=0.15"
+            );
+          if (primaryCta)
+            heroTimeline.to(
+              primaryCta,
+              { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" },
+              "<+=0.2"
+            );
+          if (secondaryCta)
+            heroTimeline.to(
+              secondaryCta,
+              { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" },
+              "<+=0.1"
+            );
+          if (visual)
+            heroTimeline.to(
+              visual,
+              { autoAlpha: 1, y: 0, scale: 1, duration: 1.2, ease: "power2.out" },
+              "<+=0.2"
+            );
+
+          // Hero scroll-out (parallax exit) - REMOVED untuk menghindari elemen menghilang
+          // Visual dan text tetap terlihat saat scroll ke section berikutnya
+
+          // Background gradient parallax
+          const heroGradient = hero.querySelector<HTMLElement>(".hero-gradient");
+          if (heroGradient) {
+            gsap.to(heroGradient, {
+              scrollTrigger: {
+                trigger: hero,
+                start: "top top",
+                end: "bottom top",
+                scrub: 1.5,
+              },
+              backgroundPosition: "50% 60%",
+              ease: "none",
+            });
+          }
         }
-
-        const heroTimeline = gsap.timeline({
-          scrollTrigger: {
-            trigger: hero,
-            start: "top 75%",
-            once: true,
-          },
-        });
-
-        if (subtitle)
-          heroTimeline.to(subtitle, { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" }, 0);
-        if (headline)
-          heroTimeline.to(
-            headline,
-            { autoAlpha: 1, y: 0, duration: 1, ease: "power2.out" },
-            subtitle ? "<+=0.15" : 0
-          );
-        if (copy)
-          heroTimeline.to(
-            copy,
-            { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" },
-            "<+=0.15"
-          );
-        if (primaryCta)
-          heroTimeline.to(
-            primaryCta,
-            { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" },
-            "<+=0.2"
-          );
-        if (secondaryCta)
-          heroTimeline.to(
-            secondaryCta,
-            { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" },
-            "<+=0.1"
-          );
-        if (visual)
-          heroTimeline.to(
-            visual,
-            { autoAlpha: 1, y: 0, scale: 1, duration: 1.2, ease: "power2.out" },
-            "<+=0.2"
-          );
       }
 
+      // Global fade-up utility (keep existing)
       const fadeUps = gsap.utils.toArray<HTMLElement>(".fade-up");
       fadeUps.forEach((element) => {
         const delayClass = element.classList.contains("fade-up-delay-1")
@@ -204,17 +231,20 @@ function useLandingAnimations() {
           ? 0.3
           : 0;
 
-        gsap.set(element, { autoAlpha: 0, y: 40, willChange: "transform" });
+        gsap.set(element, { autoAlpha: 0, y: reduceMotion ? 0 : 40, willChange: "transform" });
         gsap.to(element, {
           autoAlpha: 1,
           y: 0,
-          duration: 1,
+          duration: reduceMotion ? 0.3 : 1,
           ease: "power2.out",
           delay: delayClass,
           scrollTrigger: {
             trigger: element,
             start: "top 85%",
             once: true,
+          },
+          onComplete: () => {
+            element.style.willChange = "auto";
           },
         });
       });
@@ -228,8 +258,87 @@ function useLandingAnimations() {
   }, []);
 }
 
+// Magnetic button effect
+function useMagneticButtons() {
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
+
+    const buttons = gsap.utils.toArray<HTMLElement>("[data-magnetic]");
+    
+    buttons.forEach((button) => {
+      const handleMouseMove = (e: MouseEvent) => {
+        const rect = button.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+
+        gsap.to(button, {
+          x: x * 0.15,
+          y: y * 0.15,
+          duration: 0.3,
+          ease: "power2.out",
+        });
+      };
+
+      const handleMouseLeave = () => {
+        gsap.to(button, {
+          x: 0,
+          y: 0,
+          duration: 0.4,
+          ease: "elastic.out(1, 0.5)",
+        });
+      };
+
+      button.addEventListener("mousemove", handleMouseMove);
+      button.addEventListener("mouseleave", handleMouseLeave);
+
+      return () => {
+        button.removeEventListener("mousemove", handleMouseMove);
+        button.removeEventListener("mouseleave", handleMouseLeave);
+      };
+    });
+  }, []);
+}
+
+// Curtain effect for Testimonials section - animate the blue background
+function useCurtainTestimonials(coverRef: React.RefObject<HTMLDivElement>) {
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion || !coverRef.current) return;
+
+    const ctx = gsap.context(() => {
+      const cover = coverRef.current;
+      if (!cover) return;
+
+      // Target the blue background overlay inside the card
+      const curtainBg = cover.querySelector<HTMLElement>("[data-curtain-bg]");
+      if (!curtainBg) return;
+
+      // Initial state: background hidden above (like curtain rolled up)
+      gsap.set(curtainBg, { yPercent: -100 });
+
+      // Background drops down from top (like a curtain unrolling)
+      gsap.to(curtainBg, {
+        yPercent: 0,
+        scrollTrigger: {
+          trigger: cover,
+          start: "top 80%",
+          end: "top 40%",
+          scrub: 2,
+        },
+        ease: "power2.out",
+      });
+    });
+
+    return () => {
+      ctx.revert();
+    };
+  }, [coverRef]);
+}
+
 export default function LandingPage() {
   useLandingAnimations();
+  useMagneticButtons();
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -253,16 +362,27 @@ export default function LandingPage() {
 
 function TestimonialsWithFooterReveal() {
   const { sectionRef, coverRef } = useFooterReveal();
+  useCurtainTestimonials(coverRef);
 
   return (
     <section ref={sectionRef} className="relative h-screen" id="testimoni">
       {/* Cover layer with testimonials - will slide up to reveal footer */}
-      <div ref={coverRef} className="cover relative min-h-screen bg-white rounded-t-[48px] shadow-2xl">
-        <div className="mx-auto grid max-w-[1200px] gap-10 px-6 py-20 lg:grid-cols-[420px_1fr] lg:gap-16 w-full">
+      <div ref={coverRef} className="relative min-h-screen bg-white shadow-2xl cover">
+        <div className="mx-auto grid max-w-[1200px] gap-10 px-6 py-20 lg:grid-cols-[420px_1fr] lg:gap-16 w-full relative z-10">
           <div className="flex flex-col gap-6">
-            <div className="fade-up rounded-[32px] bg-gradient-to-br from-[#3d5086] to-[#2d3f6b] p-12 text-white shadow-2xl lg:-mt-20 lg:p-16 min-h-[400px] flex flex-col justify-center">
-              <div className="space-y-10">
-                <h2 className="text-5xl font-bold leading-tight">
+            {/* Card "Apa kata mereka" - background biru turun seperti curtain */}
+            <div 
+              className="fade-up rounded-[32px] p-12 text-white shadow-2xl lg:-mt-20 lg:p-16 min-h-[400px] flex flex-col justify-center transition-all duration-300 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] relative overflow-hidden"
+            >
+              {/* Background biru yang turun dari atas seperti curtain */}
+              <div 
+                data-curtain-bg
+                className="absolute inset-0 bg-gradient-to-br from-[#3d5086] to-[#2d3f6b] origin-top"
+              />
+              
+              {/* Konten di atas background */}
+              <div className="relative z-10 space-y-10">
+                <h2 className="text-[32px] md:text-[40px] leading-[1.1] font-bold text-white">
                   Apa kata
                   <br />
                   mereka?
@@ -291,7 +411,8 @@ function TestimonialsWithFooterReveal() {
             <div className="flex justify-center lg:justify-start">
               <Link
                 href="/feedback"
-                className="btn-glow inline-flex items-center justify-center rounded-[12px] bg-[#f48b2f] px-8 py-4 text-base font-bold text-white transition hover:bg-[#d67d3a] shadow-lg hover:shadow-xl w-full"
+                className="btn-glow inline-flex items-center justify-center rounded-[20px] bg-[#f48b2f] px-8 py-4 text-base font-bold text-white transition-all duration-200 hover:bg-[#d67d3a] shadow-lg hover:shadow-xl w-full hover:scale-[1.02]"
+                data-magnetic
               >
                 Beri Kami Feedback untuk Terus Berkembang
               </Link>
@@ -301,7 +422,7 @@ function TestimonialsWithFooterReveal() {
             {TESTIMONIALS.map((item, index) => (
               <article
                 key={item.name}
-                className={`fade-up rounded-[32px] bg-[#f8f9fa] px-10 py-8 shadow-lg transition hover:shadow-xl ${
+                className={`fade-up rounded-[20px] bg-[#f8f9fa] px-10 py-8 shadow-sm transition-all duration-200 hover:shadow-2xl hover:-translate-y-1 ${
                   index === 1 ? "fade-up-delay-1" : ""
                 }`}
               >
@@ -311,7 +432,7 @@ function TestimonialsWithFooterReveal() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-[#3d5086]">{item.name}</h3>
+                      <h3 className="text-[22px] md:text-[24px] leading-[1.2] font-semibold text-[#3d5086]">{item.name}</h3>
                       <span className="flex gap-1 text-yellow-400">
                         <StarIcon />
                         <StarIcon />
@@ -320,8 +441,8 @@ function TestimonialsWithFooterReveal() {
                         <StarIcon />
                       </span>
                     </div>
-                    <p className="mb-4 text-[15px] leading-relaxed text-[#5a5a5a]">{item.quote}</p>
-                    <p className="text-xs font-semibold text-[#8b8b8b]">{item.status}</p>
+                    <p className="mb-4 text-[16px] md:text-[17px] leading-[1.7] text-slate-600">{item.quote}</p>
+                    <p className="uppercase tracking-[0.22em] text-xs text-slate-500">{item.status}</p>
                   </div>
                 </div>
               </article>
@@ -329,15 +450,17 @@ function TestimonialsWithFooterReveal() {
             <div className="flex justify-end gap-4 pt-6">
               <button
                 type="button"
-                className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#f48b2f] bg-white text-2xl text-[#f48b2f] transition hover:bg-[#f48b2f] hover:text-white shadow-lg"
+                className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#f48b2f] bg-white text-2xl text-[#f48b2f] transition-all duration-200 hover:bg-[#f48b2f] hover:text-white shadow-lg hover:scale-[1.02] active:scale-[0.98]"
                 aria-label="Sebelumnya"
+                data-magnetic
               >
                 &larr;
               </button>
               <button
                 type="button"
-                className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f48b2f] text-2xl text-white transition hover:bg-[#d67d3a] shadow-xl"
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f48b2f] text-2xl text-white transition-all duration-200 hover:bg-[#d67d3a] shadow-xl hover:scale-[1.02] active:scale-[0.98]"
                 aria-label="Selanjutnya"
+                data-magnetic
               >
                 &rarr;
               </button>
@@ -359,40 +482,57 @@ function StarIcon() {
 
 function HeroSection() {
   return (
-    <section className="relative h-screen overflow-hidden hero-gradient" data-hero>
+    <section className="relative h-screen overflow-hidden" data-hero>
+      {/* Parallax gradient background */}
+      <div 
+        className="hero-gradient absolute inset-0 bg-gradient-to-br from-[#203063] via-[#28407a] to-[#142253]"
+        style={{ backgroundSize: "150% 150%", backgroundPosition: "50% 50%" }}
+      />
+      
       <div className="relative z-[2] mx-auto flex h-full max-w-[1200px] flex-col-reverse items-center justify-center gap-12 px-6 pb-16 pt-36 md:flex-row md:items-center md:justify-between md:px-12 lg:px-20">
         <div className="max-w-xl text-center md:text-left">
-          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70 md:text-sm" data-hero-subtitle>
+          <p 
+            className="uppercase tracking-[0.22em] text-xs text-white/70" 
+            data-hero-subtitle
+          >
             PLATFORM OPTIFIND
           </p>
           <h1
-            className="mt-6 text-[34px] font-bold leading-tight text-white md:text-[48px]"
+            className="mt-6 text-[40px] md:text-[56px] leading-[1.05] tracking-[-0.02em] font-extrabold text-white"
             data-hero-headline
           >
             Temukan Barangmu,
             <span className="text-[#f48b2f]"> Bantu Orang Lain Menemukan Miliknya</span>
           </h1>
-          <p className="mt-5 text-base text-white/85 md:text-lg" data-hero-copy>
+          <p 
+            className="mt-5 text-[16px] md:text-[17px] leading-[1.7] text-white/85" 
+            data-hero-copy
+          >
             Platform untuk melapor dan menemukan barang hilang di sekitar Anda dengan pencarian pintar dan koneksi komunitas.
           </p>
           <div className="flex flex-col gap-3 mt-10 sm:flex-row sm:items-center">
             <Link
               href="/barangs/lapor-hilang"
-              className="btn-glow inline-flex items-center justify-center rounded-[12px] bg-[#f48b2f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#dd7926] sm:min-w-[190px]"
+              className="inline-flex items-center justify-center rounded-[20px] bg-[#f48b2f] px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#dd7926] sm:min-w-[190px] shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
               data-hero-cta-primary
+              data-magnetic
             >
               Laporkan Sekarang
             </Link>
             <Link
               href="/cari?tipe=Temuan"
-              className="btn-glow inline-flex items-center justify-center rounded-[12px] border border-white/70 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-[#1d2d5a] sm:min-w-[200px]"
+              className="inline-flex items-center justify-center rounded-[20px] border-2 border-white/70 px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-white hover:text-[#1d2d5a] sm:min-w-[200px] shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
               data-hero-cta-secondary
+              data-magnetic
             >
               Lihat Barang Ditemukan
             </Link>
           </div>
         </div>
-        <div className="relative flex items-center justify-center w-full max-w-md md:max-w-lg" data-hero-visual>
+        <div 
+          className="relative flex items-center justify-center w-full max-w-md md:max-w-lg will-change-transform" 
+          data-hero-visual
+        >
           <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#f48b2f]/40 via-transparent to-[#4b74d7]/40 blur-3xl" />
           <Image
             src="/assets/magnifier.svg"
@@ -412,15 +552,15 @@ function HowItWorks() {
   useMorphingHowItWorks();
 
   return (
-    <section id="cara-kerja" className="h-screen overflow-hidden bg-white section">
+    <section id="cara-kerja" className="h-screen overflow-hidden bg-gradient-to-b from-[#f2f5ff] to-white section">
       <div className="sticky top-0 flex items-center h-screen overflow-hidden">
         <div className="w-full max-w-6xl px-6 mx-auto overflow-visible">
           {/* Section Header */}
-          <header className="mb-12 text-center" data-stage-header>
-            <h2 className="text-3xl md:text-4xl font-semibold text-[#1d1d1d]">
+          <header className="mb-16 text-center will-change-transform" data-stage-header>
+            <h2 className="text-[32px] md:text-[40px] leading-[1.1] tracking-[-0.01em] font-bold text-slate-900">
               Bagaimana OptiFind Bekerja
             </h2>
-            <p className="mt-3 text-sm md:text-base text-[#6b6b6b]">
+            <p className="mt-4 text-[16px] md:text-[17px] leading-[1.7] text-slate-600 max-w-2xl mx-auto">
               Proses sederhana dalam tiga langkah untuk membantu Anda menemukan barang yang hilang.
             </p>
           </header>
@@ -430,17 +570,17 @@ function HowItWorks() {
             {STEPS.map((step, index) => (
               <article
                 key={step.title}
-                className="card rounded-[18px] border border-[#e6e6e6] bg-white px-6 py-8 shadow-sm transition-all will-change-transform h-[320px] flex flex-col"
+                className="card rounded-[20px] border-2 border-slate-200 bg-white px-8 py-10 shadow-sm transition-all duration-200 will-change-transform h-[380px] flex flex-col hover:shadow-2xl hover:-translate-y-1"
                 data-card
                 data-index={index}
               >
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#f0f5ff]">
+                <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f48b2f]/10 to-[#f48b2f]/5 transition-transform hover:scale-110">
                   {step.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-[#1d1d1d] mb-3">
+                <h3 className="text-[22px] md:text-[24px] leading-[1.2] font-semibold text-slate-900 mb-4">
                   {step.title}
                 </h3>
-                <p className="text-sm leading-relaxed text-[#6b6b6b]">
+                <p className="text-[16px] md:text-[17px] leading-[1.7] text-slate-600">
                   {step.description}
                 </p>
               </article>
@@ -458,32 +598,33 @@ function CommunityImpact() {
   return (
     <section id="dampak" className="h-screen overflow-hidden text-white section">
       <div
-        className="impact-bg sticky top-0 flex h-screen items-center bg-gradient-to-br from-[#203063] via-[#28407a] to-[#142253]"
+        className="impact-bg sticky top-0 flex h-screen items-center bg-gradient-to-br from-[#203063] via-[#28407a] to-[#142253] will-change-transform"
         data-impact-bg
+        style={{ backgroundSize: "120% 120%", backgroundPosition: "50% 50%" }}
       >
         <div className="flex flex-col items-start w-full max-w-6xl gap-16 px-6 mx-auto md:flex-row md:items-center md:justify-between md:gap-24">
           <div data-step className="max-w-lg">
-            <h2 className="text-5xl font-bold leading-tight md:text-6xl">
+            <h2 className="text-[40px] md:text-[56px] leading-[1.05] tracking-[-0.02em] font-extrabold text-white">
               <span className="text-[#f48b2f]">Dampak</span>
               <br />
               Komunitas Kami
             </h2>
-            <p className="mt-6 text-base text-white/80 md:text-lg">
+            <p className="mt-8 text-[16px] md:text-[17px] leading-[1.7] text-white/85">
               Bersama membangun ekosistem kepedulian terhadap barang hilang dan temuan. Setiap laporan membawa harapan kembali kepada pemiliknya.
             </p>
           </div>
-          <div data-step className="grid w-full max-w-xl gap-10 md:grid-cols-3 md:gap-12">
+          <div data-step className="grid w-full max-w-xl gap-12 md:grid-cols-3 md:gap-16">
             {IMPACT_STATS.map((stat) => (
-              <div key={stat.label} className="flex flex-col items-center text-center">
-                <div className="stats-icon-circle flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-[#f48b2f] to-[#f5a85f] text-[#142253] shadow-xl">
+              <div key={stat.label} className="flex flex-col items-center text-center group">
+                <div className="stats-icon-circle flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-[#f48b2f] to-[#f5a85f] text-[#142253] shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl">
                   {stat.icon}
                 </div>
-                <div className="mt-6 text-3xl font-extrabold text-white">
+                <div className="mt-8 text-[40px] md:text-[48px] font-extrabold text-white leading-none">
                   {stat.value === "10,000+" && <span data-counter data-to="10000" data-suffix="+">0</span>}
                   {stat.value === "5,000+" && <span data-counter data-to="5000" data-suffix="+">0</span>}
                   {stat.value === "97%" && <span data-counter data-to="97" data-suffix="%">0</span>}
                 </div>
-                <p className="mt-2 text-sm font-medium tracking-wide uppercase text-white/70 whitespace-nowrap">{stat.label}</p>
+                <p className="mt-4 uppercase tracking-[0.22em] text-xs text-white/70 whitespace-nowrap font-semibold">{stat.label}</p>
               </div>
             ))}
           </div>
