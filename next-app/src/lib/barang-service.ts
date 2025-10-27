@@ -154,13 +154,13 @@ export async function getBarangOverview() {
 
     const barangTemuan = sortByWaktuDesc(
       barangs.filter(
-        (barang) => barang.tipe === "temuan" && barang.statusId == 1
+        (barang) => barang.tipe === "temuan" && barang.statusId == 1 && barang.kategoriId != null
       )
     ).slice(0, 6);
 
     const barangHilang = sortByWaktuDesc(
       barangs.filter(
-        (barang) => barang.tipe === "hilang" && barang.statusId == 2
+        (barang) => barang.tipe === "hilang" && barang.statusId == 2 && barang.kategoriId != null
       )
     ).slice(0, 6);
 
@@ -229,6 +229,9 @@ export async function searchBarangs(params: SearchParams): Promise<BarangWithRel
     if (error) throw error;
 
     let items = mapBarangs(data ?? []);
+
+    // Filter out barangs without kategoriId (incomplete data)
+    items = items.filter((barang) => barang.kategoriId != null);
 
     // Search by keyword in nama, kategori, lokasi
     if (q) {
