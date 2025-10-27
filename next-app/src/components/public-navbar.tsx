@@ -27,13 +27,17 @@ export function PublicNavbar() {
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target as Node)
+            ) {
                 setProfileDropdownOpen(false);
             }
         };
 
         document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const handleLogout = async () => {
@@ -65,28 +69,21 @@ export function PublicNavbar() {
                     <div className="flex-1 max-w-2xl mx-4">
                         <form onSubmit={handleSearch}>
                             <div className="relative">
-                                <Image
-                                    src="/assets/cari.svg"
-                                    alt="Search"
-                                    width={18}
-                                    height={18}
-                                    className="absolute left-3 top-1/2 -translate-y-1/2 z-10 opacity-50"
-                                />
                                 <input
                                     type="text"
-                                    placeholder="Cari barang"
+                                    placeholder="Cari barang..."
                                     value={searchQuery}
                                     onChange={(e) =>
                                         setSearchQuery(e.target.value)
                                     }
-                                    className="w-full px-4 py-2.5 rounded-lg text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                    className="w-full px-4 py-2.5 pr-10 rounded-lg bg-gray-100 text-gray-800 placeholder:text-gray-500 outline-none"
                                 />
                                 <Image
                                     src="/assets/cari.svg"
                                     alt="Search"
-                                    width={18}
-                                    height={18}
-                                    className="absolute left-3 top-1/2 -translate-y-1/2 opacity-60"
+                                    width={24}
+                                    height={24}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 opacity-70 brightness-0"
                                 />
                             </div>
                         </form>
@@ -175,7 +172,11 @@ export function PublicNavbar() {
                         {user ? (
                             <div className="relative" ref={dropdownRef}>
                                 <button
-                                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                                    onClick={() =>
+                                        setProfileDropdownOpen(
+                                            !profileDropdownOpen
+                                        )
+                                    }
                                     className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors"
                                     aria-label="Profile menu"
                                 >
@@ -199,7 +200,8 @@ export function PublicNavbar() {
                                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 z-50">
                                         <div className="px-4 py-3 border-b border-gray-200">
                                             <p className="text-sm font-medium text-gray-900">
-                                                {user.user_metadata?.name || "User"}
+                                                {user.user_metadata?.name ||
+                                                    "User"}
                                             </p>
                                             <p className="text-xs text-gray-500 truncate">
                                                 {user.email}
