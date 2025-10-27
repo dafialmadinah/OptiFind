@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { uploadBarangPhoto } from "@/lib/supabase-storage";
 import { useAuth } from "@/lib/auth-context";
 import Skeleton from "@/components/skeleton";
+import { ConfirmationModal, SuccessModal, ErrorModal } from "@/components/modal";
 
 interface Kategori {
     id: number;
@@ -25,6 +26,18 @@ export default function EditBarangPage() {
     const [error, setError] = useState<string | null>(null);
     const [barangTipe, setBarangTipe] = useState<string>("");
     const [currentStatusId, setCurrentStatusId] = useState<number>(1);
+
+    // Modal states
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [modalData, setModalData] = useState({
+        title: "",
+        message: "",
+        onConfirm: () => {},
+        statusId: 0,
+        actionName: "",
+    });
 
     const [formData, setFormData] = useState({
         nama: "",
@@ -78,8 +91,15 @@ export default function EditBarangPage() {
                 });
             } catch (err) {
                 console.error(err);
-                alert("❌ Status barang tidak ditemukan.");
-                router.push("/barangs");
+                setModalData({
+                    title: "Barang Tidak Ditemukan",
+                    message: "Status barang tidak ditemukan atau terjadi kesalahan.",
+                    onConfirm: () => {},
+                    statusId: 0,
+                    actionName: "",
+                });
+                setShowErrorModal(true);
+                setTimeout(() => router.push("/barangs"), 2000);
             } finally {
                 setIsLoadingBarang(false);
             }
@@ -90,8 +110,15 @@ export default function EditBarangPage() {
     // Pastikan user login
     useEffect(() => {
         if (!authLoading && !user) {
-            alert("Anda harus login terlebih dahulu.");
-            router.push("/login?callbackUrl=/barangs");
+            setModalData({
+                title: "Belum Login",
+                message: "Anda harus login terlebih dahulu untuk mengedit barang.",
+                onConfirm: () => {},
+                statusId: 0,
+                actionName: "",
+            });
+            setShowErrorModal(true);
+            setTimeout(() => router.push("/login?callbackUrl=/barangs"), 2000);
         }
     }, [user, authLoading, router]);
 
@@ -165,17 +192,32 @@ export default function EditBarangPage() {
                     : "Terjadi kesalahan saat update";
             console.error(err);
             setError(message);
-            alert("❌ " + message);
+            setModalData({
+                title: "Gagal Menyimpan",
+                message: message,
+                onConfirm: () => {},
+                statusId: 0,
+                actionName: "",
+            });
+            setShowErrorModal(true);
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleUpdateStatus = async (newStatusId: number, actionName: string) => {
-        if (!confirm(`Apakah Anda yakin ingin mengubah status menjadi "${actionName}"?`)) {
-            return;
-        }
+        setModalData({
+            title: "Konfirmasi Perubahan Status",
+            message: `Apakah Anda yakin ingin mengubah status menjadi "${actionName}"?`,
+            onConfirm: () => confirmUpdateStatus(newStatusId, actionName),
+            statusId: newStatusId,
+            actionName: actionName,
+        });
+        setShowConfirmModal(true);
+    };
 
+    const confirmUpdateStatus = async (newStatusId: number, actionName: string) => {
+        setShowConfirmModal(false);
         setIsUpdatingStatus(true);
         try {
             const response = await fetch(`/api/barangs/${id}/status`, {
@@ -191,11 +233,29 @@ export default function EditBarangPage() {
             }
 
             setCurrentStatusId(newStatusId);
-            alert(`✅ Status berhasil diubah menjadi "${actionName}"!`);
-            router.push("/riwayat-laporan");
+            setModalData({
+                title: "Berhasil!",
+                message: `Status berhasil diubah menjadi "${actionName}"!`,
+                onConfirm: () => {},
+                statusId: 0,
+                actionName: "",
+            });
+            setShowSuccessModal(true);
+            
+            // Redirect after showing success modal
+            setTimeout(() => {
+                router.push("/riwayat-laporan");
+            }, 1500);
         } catch (error) {
             console.error("Error updating status:", error);
-            alert("❌ Gagal mengubah status. Silakan coba lagi.");
+            setModalData({
+                title: "Gagal Mengubah Status",
+                message: "Gagal mengubah status. Silakan coba lagi.",
+                onConfirm: () => {},
+                statusId: 0,
+                actionName: "",
+            });
+            setShowErrorModal(true);
         } finally {
             setIsUpdatingStatus(false);
         }
@@ -426,6 +486,38 @@ export default function EditBarangPage() {
                     </p>
                 </div>
             </div>
+
+            {/* Modals */}
+            <ConfirmationModal
+                isOpen={showConfirmModal}
+                onClose={() => setShowConfirmModal(false)}
+                onConfirm={modalData.onConfirm}
+                title={modalData.title}
+                message={modalData.message}
+                confirmText="Ya, Ubah Status"
+                cancelText="Batal"
+                variant="warning"
+                isLoading={isUpdatingStatus}
+            />
+
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => {
+                    setShowSuccessModal(false);
+                    router.push("/riwayat-laporan");
+                }}
+                title={modalData.title}
+                message={modalData.message}
+                buttonText="OK"
+            />
+
+            <ErrorModal
+                isOpen={showErrorModal}
+                onClose={() => setShowErrorModal(false)}
+                title={modalData.title}
+                message={modalData.message}
+                buttonText="Tutup"
+            />
         </section>
     );
 }

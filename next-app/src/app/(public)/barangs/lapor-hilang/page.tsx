@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { uploadBarangPhoto } from "@/lib/supabase-storage";
 import { useAuth } from "@/lib/auth-context";
 import Skeleton from "@/components/skeleton";
+import { SuccessModal, ErrorModal } from "@/components/modal";
 
 interface Kategori {
     id: number;
@@ -27,6 +28,14 @@ export default function LaporHilangPage() {
     });
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Modal states
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [modalData, setModalData] = useState({
+        title: "",
+        message: "",
+    });
 
     // Fetch kategoris from API
     useEffect(() => {
@@ -72,8 +81,12 @@ export default function LaporHilangPage() {
         setError(null);
 
         if (!user) {
-            alert("Anda harus login terlebih dahulu.");
-            router.push("/login");
+            setModalData({
+                title: "Belum Login",
+                message: "Anda harus login terlebih dahulu untuk melaporkan barang hilang.",
+            });
+            setShowErrorModal(true);
+            setTimeout(() => router.push("/login"), 2000);
             return;
         }
         
@@ -107,8 +120,12 @@ export default function LaporHilangPage() {
             });
 
             if (response.status === 401) {
-                alert("Sesi Anda telah berakhir. Silakan login kembali.");
-                router.push("/login");
+                setModalData({
+                    title: "Sesi Berakhir",
+                    message: "Sesi Anda telah berakhir. Silakan login kembali.",
+                });
+                setShowErrorModal(true);
+                setTimeout(() => router.push("/login"), 2000);
                 return;
             }
 
@@ -119,9 +136,13 @@ export default function LaporHilangPage() {
 
             const result = await response.json();
             
-            // Success! Redirect to barangs page
-            alert("✅ Laporan barang hilang berhasil dikirim!");
-            router.push("/barangs");
+            // Success! Show modal then redirect
+            setModalData({
+                title: "Berhasil!",
+                message: "Laporan barang hilang berhasil dikirim!",
+            });
+            setShowSuccessModal(true);
+            setTimeout(() => router.push("/barangs"), 1500);
 
         } catch (error) {
             console.error("Error submitting form:", error);
@@ -129,7 +150,11 @@ export default function LaporHilangPage() {
                 ? error.message
                 : "Terjadi kesalahan saat mengirim laporan";
             setError(errorMessage);
-            alert("❌ " + errorMessage);
+            setModalData({
+                title: "Gagal Mengirim Laporan",
+                message: errorMessage,
+            });
+            setShowErrorModal(true);
         } finally {
             setIsUploading(false);
         }
@@ -357,6 +382,26 @@ export default function LaporHilangPage() {
                     </div>
                 </form>
             </div>
+
+            {/* Modals */}
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => {
+                    setShowSuccessModal(false);
+                    router.push("/barangs");
+                }}
+                title={modalData.title}
+                message={modalData.message}
+                buttonText="OK"
+            />
+
+            <ErrorModal
+                isOpen={showErrorModal}
+                onClose={() => setShowErrorModal(false)}
+                title={modalData.title}
+                message={modalData.message}
+                buttonText="Tutup"
+            />
         </section>
     );
 }
