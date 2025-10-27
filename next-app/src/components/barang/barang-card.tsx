@@ -43,18 +43,18 @@ export function BarangCard({ barang, href = `/barangs/${barang.id}`, className }
         />
       </div>
       <div className="space-y-2 p-3">
-        <h3 className="truncate text-[14px] font-semibold text-[#193a6f] leading-snug">{barang.nama}</h3>
+        <h3 className="truncate text-[16px] font-semibold text-[#193a6f] leading-snug">{barang.nama}</h3>
 
         {barang.lokasi && (
-          <div className="flex items-center text-[12px] text-gray-600">
-            <Image src={lokasiIcon} alt="Lokasi" width={16} height={16} className="mr-1 shrink-0" />
+          <div className="flex items-center text-[14px] text-gray-600">
+            <Image src={lokasiIcon} alt="Lokasi" width={16} height={16} className="mr-2 shrink-0" />
             <span className="truncate">{barang.lokasi}</span>
           </div>
         )}
 
         {waktuLabel && (
-          <div className="flex items-center text-[12px] text-gray-600">
-            <Image src={waktuIcon} alt="Waktu" width={16} height={16} className="mr-1 shrink-0" />
+          <div className="flex items-center text-[14px] text-gray-600">
+            <Image src={waktuIcon} alt="Waktu" width={16} height={16} className="mr-2 shrink-0" />
             <span>{waktuLabel}</span>
           </div>
         )}

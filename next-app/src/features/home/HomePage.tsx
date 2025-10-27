@@ -8,23 +8,28 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/id";
 import { CategoryCard } from "@/components/category-card";
 import { BannerCard } from "@/components/banner-card";
-import { getBarangOverview, type BarangWithRelations, type Kategori } from "@/lib/barang-service";
+import { BarangCard } from "@/components/barang/barang-card";
+import {
+    getBarangOverview,
+    type BarangWithRelations,
+    type Kategori,
+} from "@/lib/barang-service";
 
 dayjs.extend(relativeTime);
 dayjs.locale("id");
 
-// Icon mapping for categories (fallback to default icon if not found)
+// Icon mapping for categories
 const categoryIcons: Record<string, string> = {
-    "Dompet": "/assets/dompet.svg",
-    "Kunci": "/assets/kunci.svg",
-    "Aksesoris": "/assets/aksesoris.svg",
-    "Smartphone": "/assets/smartphone.svg",
-    "Elektronik": "/assets/elektronik.svg",
-    "Botol": "/assets/botol minum.svg",
+    Dompet: "/assets/dompet.svg",
+    Kunci: "/assets/kunci.svg",
+    Aksesoris: "/assets/aksesoris.svg",
+    Smartphone: "/assets/smartphone.svg",
+    Elektronik: "/assets/elektronik.svg",
+    Botol: "/assets/botol minum.svg",
     "Alat Tulis": "/assets/alat tulis.svg",
-    "Pakaian": "/assets/pakaian.svg",
-    "Dokumen": "/assets/dokumen.svg",
-    "Lainnya": "/assets/lainnya.svg",
+    Pakaian: "/assets/pakaian.svg",
+    Dokumen: "/assets/dokumen.svg",
+    Lainnya: "/assets/lainnya.svg",
 };
 
 const getCategoryIcon = (categoryName: string): string => {
@@ -32,78 +37,30 @@ const getCategoryIcon = (categoryName: string): string => {
 };
 
 export default function HomePage() {
-    const [searchQuery, setSearchQuery] = useState("");
     const [barangTemuan, setBarangTemuan] = useState<BarangWithRelations[]>([]);
     const [barangHilang, setBarangHilang] = useState<BarangWithRelations[]>([]);
     const [kategoris, setKategoris] = useState<Kategori[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const overview = await getBarangOverview();
+                setBarangTemuan(overview.barangTemuan);
+                setBarangHilang(overview.barangHilang);
+                setKategoris(overview.kategoris);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
         fetchData();
     }, []);
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const overview = await getBarangOverview();
-            console.log(overview)
-            
-            setBarangTemuan(overview.barangTemuan);
-            setBarangHilang(overview.barangHilang);
-            setKategoris(overview.kategoris);
-        } catch (error) {
-            console.error("Error fetching data:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (searchQuery.trim()) {
-            window.location.href = `/cari?q=${encodeURIComponent(searchQuery)}`;
-        }
-    };
-
-    const BarangCard = ({ barang }: { barang: BarangWithRelations }) => (
-        <Link href={`/barangs/${barang.id}`}>
-            <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer">
-                <div className="aspect-square bg-gray-100 flex items-center justify-center relative">
-                    <Image
-                        src={barang.foto || "/assets/no_image.png"}
-                        alt={barang.nama}
-                        fill
-                        className="object-cover"
-                    />
-                </div>
-                <div className="p-3">
-                    <h3
-                        className="font-semibold text-sm text-gray-800 mb-1 truncate"
-                        title={barang.nama}
-                    >
-                        {barang.nama}
-                    </h3>
-                    {barang.lokasi && (
-                        <p className="text-xs text-gray-500 flex items-center gap-1 mb-1">
-                            <Image
-                                src="/assets/lokasi_abu.svg"
-                                alt=""
-                                width={12}
-                                height={12}
-                            />
-                            <span className="truncate">{barang.lokasi}</span>
-                        </p>
-                    )}
-                    <p className="text-xs text-gray-400">
-                        {dayjs(barang.createdAt).fromNow()}
-                    </p>
-                </div>
-            </div>
-        </Link>
-    );
-
     const SkeletonCard = () => (
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
+        <div className="bg-white rounded-[15px] shadow overflow-hidden animate-pulse">
             <div className="aspect-square bg-gray-200" />
             <div className="p-3 space-y-2">
                 <div className="h-4 bg-gray-200 rounded w-3/4" />
@@ -115,9 +72,7 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-
-            {/* Main Content */}
-            <main className="container mx-auto px-4 py-8">
+            <main className="container mx-auto px-4 py-12">
                 {/* Banner Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
                     <BannerCard
@@ -144,23 +99,26 @@ export default function HomePage() {
                         Kategori Barang
                     </h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-3">
-                        {loading ? (
-                            Array.from({ length: 10 }).map((_, i) => (
-                                <div key={i} className="bg-white rounded-xl shadow-sm p-4 animate-pulse">
-                                    <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-2" />
-                                    <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto" />
-                                </div>
-                            ))
-                        ) : (
-                            kategoris.slice(0, 10).map((kategori) => (
-                                <CategoryCard
-                                    key={kategori.id}
-                                    id={kategori.id}
-                                    name={kategori.nama}
-                                    icon={getCategoryIcon(kategori.nama)}
-                                />
-                            ))
-                        )}
+                        {loading
+                            ? Array.from({ length: 10 }).map((_, i) => (
+                                  <div
+                                      key={i}
+                                      className="bg-white rounded-xl shadow-sm p-4 animate-pulse"
+                                  >
+                                      <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-2" />
+                                      <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto" />
+                                  </div>
+                              ))
+                            : kategoris
+                                  .slice(0, 10)
+                                  .map((kategori) => (
+                                      <CategoryCard
+                                          key={kategori.id}
+                                          id={kategori.id}
+                                          name={kategori.nama}
+                                          icon={getCategoryIcon(kategori.nama)}
+                                      />
+                                  ))}
                     </div>
                 </section>
 
@@ -189,15 +147,27 @@ export default function HomePage() {
                         ) : (
                             <div className="col-span-full flex flex-col items-center justify-center py-8 px-4">
                                 <div className="w-24 h-24 mb-6 relative opacity-50">
-                                    <svg className="w-full h-full text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    <svg
+                                        className="w-full h-full text-gray-300"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={1.5}
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                        />
                                     </svg>
                                 </div>
                                 <h3 className="text-xl font-semibold text-gray-700 mb-2">
                                     Belum Ada Barang Temuan
                                 </h3>
                                 <p className="text-gray-500 text-center max-w-md mb-6">
-                                    Belum ada barang yang ditemukan saat ini. Jika Anda menemukan barang, silakan laporkan!
+                                    Belum ada barang yang ditemukan saat ini.
+                                    Jika Anda menemukan barang, silakan
+                                    laporkan!
                                 </p>
                             </div>
                         )}
@@ -229,15 +199,27 @@ export default function HomePage() {
                         ) : (
                             <div className="col-span-full flex flex-col items-center justify-center py-8 px-4">
                                 <div className="w-24 h-24 mb-6 relative opacity-50">
-                                    <svg className="w-full h-full text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    <svg
+                                        className="w-full h-full text-gray-300"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={1.5}
+                                            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        />
                                     </svg>
                                 </div>
                                 <h3 className="text-xl font-semibold text-gray-700 mb-2">
                                     Belum Ada Laporan Barang Hilang
                                 </h3>
                                 <p className="text-gray-500 text-center max-w-md mb-6">
-                                    Belum ada laporan barang hilang saat ini. Jika Anda kehilangan barang, segera laporkan!
+                                    Belum ada laporan barang hilang saat ini.
+                                    Jika Anda kehilangan barang, segera
+                                    laporkan!
                                 </p>
                             </div>
                         )}

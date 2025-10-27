@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { uploadBarangPhoto } from "@/lib/supabase-storage";
 import { useAuth } from "@/lib/auth-context";
 import Skeleton from "@/components/skeleton";
+import SelectCategory from "@/components/select-category";
+import MUIDateTimePicker from "@/components/MUIDateTimePicker";
 
 interface Kategori {
     id: number;
@@ -46,9 +48,6 @@ export default function LaporTemuanPage() {
         fetchKategoris();
     }, []);
 
-    // Removed automatic alert + redirect on mount to avoid firing on each page refresh.
-    // Users will be prompted with a non-intrusive login CTA instead of an alert.
-
     const handleChange = (
         e: React.ChangeEvent<
             HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -76,7 +75,7 @@ export default function LaporTemuanPage() {
             router.push("/login");
             return;
         }
-        
+
         if (!formData.foto) {
             setError("Silakan pilih foto barang terlebih dahulu.");
             return;
@@ -118,7 +117,7 @@ export default function LaporTemuanPage() {
             }
 
             const result = await response.json();
-            
+
             // Success! Redirect to barangs page
             alert("✅ Laporan barang temuan berhasil dikirim!");
             router.push("/barangs");
@@ -130,9 +129,10 @@ export default function LaporTemuanPage() {
             if (fileInput) fileInput.value = "";
         } catch (error) {
             console.error("Error submitting form:", error);
-            const errorMessage = error instanceof Error
-                ? error.message
-                : "Terjadi kesalahan saat mengirim laporan";
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "Terjadi kesalahan saat mengirim laporan";
             setError(errorMessage);
             alert("❌ " + errorMessage);
         } finally {
@@ -150,22 +150,29 @@ export default function LaporTemuanPage() {
         return (
             <section className="bg-[#f4f4f4] pt-8 sm:pt-12 pb-12 px-4 sm:px-8 md:px-[100px] font-poppins">
                 <div className="mx-auto max-w-[720px] rounded-[20px] bg-white p-8 text-center">
-                    <h2 className="mb-2 text-[22px] font-bold text-[#193a6f]">Silakan login</h2>
+                    <h2 className="mb-2 text-[22px] font-bold text-[#193a6f]">
+                        Silakan login
+                    </h2>
                     <p className="mb-4 text-[15px] text-black">
-                        Anda harus login terlebih dahulu untuk mengakses formulir pelaporan.
-                        Tekan tombol di bawah untuk masuk — setelah login Anda akan dikembalikan ke halaman ini.
+                        Anda harus login terlebih dahulu untuk mengakses
+                        formulir pelaporan. Tekan tombol di bawah untuk masuk —
+                        setelah login Anda akan dikembalikan ke halaman ini.
                     </p>
                     <div className="flex items-center justify-center gap-4">
                         <button
                             type="button"
-                            onClick={() => router.push("/login?callbackUrl=/barangs/lapor-temuan")}
+                            onClick={() =>
+                                router.push(
+                                    "/login?callbackUrl=/barangs/lapor-temuan"
+                                )
+                            }
                             className="rounded-[10px] bg-[#f98125] px-6 py-2 font-bold text-white hover:bg-[#d96f1f]"
                         >
                             Login
                         </button>
                         <button
                             type="button"
-                            onClick={() => router.push('/barangs')}
+                            onClick={() => router.push("/barangs")}
                             className="rounded-[10px] border border-[#b0b0b0] px-6 py-2 font-medium text-[#1e1e1e] hover:bg-gray-50"
                         >
                             Kembali ke daftar
@@ -208,44 +215,27 @@ export default function LaporTemuanPage() {
                     </div>
 
                     {/* Kategori */}
-                    <div>
-                        <label className="font-semibold text-[16px] text-black">
-                            Kategori
-                        </label>
-                        <select
-                            name="kategoriId"
+                    <div className="mb-4">
+                        <SelectCategory
+                            label="Kategori"
+                            kategoris={kategoris}
                             value={formData.kategoriId}
-                            onChange={handleChange}
-                            required
+                            onChange={(id) =>
+                                setFormData({ ...formData, kategoriId: id })
+                            }
                             disabled={isLoadingKategoris}
-                            className="w-full border border-[#b0b0b0] rounded-[10px] px-4 py-2 mt-1 outline-none focus:border-blue-400 focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <option value={0}>
-                                {isLoadingKategoris ? "Memuat kategori..." : "Pilih kategori"}
-                            </option>
-                            {kategoris.map((kat) => (
-                                <option key={kat.id} value={kat.id}>
-                                    {kat.nama}
-                                </option>
-                            ))}
-                        </select>
+                            isLoading={isLoadingKategoris}
+                        />
                     </div>
 
                     {/* Waktu */}
-                    <div>
-                        <label className="font-semibold text-[16px] text-black">
-                            Waktu
-                        </label>
-                        <input
-                            type="datetime-local"
-                            name="waktu"
-                            value={formData.waktu}
-                            onChange={handleChange}
-                            onClick={(e) => e.currentTarget.showPicker?.()}
-                            required
-                            className="w-full border border-[#b0b0b0] rounded-[10px] px-4 py-2 mt-1 outline-none focus:border-blue-400 focus:ring-0 cursor-pointer"
-                        />
-                    </div>
+                    <MUIDateTimePicker
+                        label="Waktu"
+                        value={formData.waktu}
+                        onChange={(val) =>
+                            setFormData({ ...formData, waktu: val })
+                        }
+                    />
 
                     {/* Lokasi */}
                     <div>
