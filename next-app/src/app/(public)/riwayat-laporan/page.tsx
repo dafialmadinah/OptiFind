@@ -269,7 +269,7 @@ export default function RiwayatLaporanPage() {
                                 <div className="flex border-b border-gray-200">
                                     <button
                                         onClick={() => setActiveTab("temuan")}
-                                        className={`flex-1 px-6 py-4 text-center font-semibold transition-colors ${
+                                        className={`flex-1 px-6 py-3 text-center font-semibold transition-colors ${
                                             activeTab === "temuan"
                                                 ? "text-blue-700 border-b-2 border-blue-700 bg-blue-50"
                                                 : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
@@ -279,7 +279,7 @@ export default function RiwayatLaporanPage() {
                                     </button>
                                     <button
                                         onClick={() => setActiveTab("hilang")}
-                                        className={`flex-1 px-6 py-4 text-center font-semibold transition-colors ${
+                                        className={`flex-1 px-6 py-3 text-center font-semibold transition-colors ${
                                             activeTab === "hilang"
                                                 ? "text-blue-700 border-b-2 border-blue-700 bg-blue-50"
                                                 : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
@@ -331,43 +331,22 @@ export default function RiwayatLaporanPage() {
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {filteredBarangs.map((barang) =>
-                                        barang.statusId &&
-                                        isSelesai(handleStatusById(barang.statusId)) ? (
-                                            <BarangRiwayatCard
-                                                key={barang.id}
-                                                id={barang.id}
-                                                nama={barang.nama}
-                                                foto={barang.foto}
-                                                lokasi={barang.lokasi}
-                                                status={handleStatusById(barang.statusId)}
-                                                createdAt={barang.createdAt}
-                                                onEditLaporan={() =>
-                                                    handleEditLaporan(barang.id)
-                                                }
-                                            />
-                                        ) : (
-                                            barang.statusId && (
-                                                <BarangListCard
-                                                    key={barang.id}
-                                                    id={barang.id}
-                                                    nama={barang.nama}
-                                                    foto={barang.foto}
-                                                    lokasi={barang.lokasi}
-                                                    status={handleStatusById(
-                                                        barang.statusId ?? 1
-                                                    )}
-                                                    createdAt={barang.createdAt}
-                                                    showEditButton={true}
-                                                    onEdit={() =>
-                                                        handleEditLaporan(
-                                                            barang.id
-                                                        )
-                                                    }
-                                                />
-                                            )
-                                        )
-                                    )}
+                                    {filteredBarangs.map((barang) => (
+                                        <BarangRiwayatCard
+                                            key={barang.id}
+                                            id={barang.id}
+                                            nama={barang.nama}
+                                            foto={barang.foto}
+                                            lokasi={barang.lokasi}
+                                            status={handleStatusById(
+                                                barang.statusId ?? 1
+                                            )}
+                                            waktu={barang.waktu}
+                                            onEditLaporan={() =>
+                                                handleEditLaporan(barang.id)
+                                            }
+                                        />
+                                    ))}
                                 </div>
                             )}
                         </div>
