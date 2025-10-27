@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { BarangCard } from "@/components/barang/barang-card";
 import { BarangFilter } from "@/components/barang-filter";
+import Skeleton from "@/components/skeleton";
 import {
     searchBarangs,
     getAllKategoris,
@@ -24,7 +25,7 @@ const tipeTabs = [
     { label: "Hilang", value: "hilang" },
 ];
 
-export default function CariPage() {
+function CariContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const query = searchParams.get("q") ?? "";
@@ -275,5 +276,13 @@ export default function CariPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function CariPage() {
+    return (
+        <Suspense fallback={<Skeleton />}>
+            <CariContent />
+        </Suspense>
     );
 }
